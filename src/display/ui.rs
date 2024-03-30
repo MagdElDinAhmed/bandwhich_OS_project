@@ -1,5 +1,8 @@
 use std::{collections::HashMap, net::IpAddr, time::Duration};
 
+use std::fs::OpenOptions;
+use std::io::prelude::*;
+
 use chrono::prelude::*;
 use ratatui::{backend::Backend, Terminal};
 
@@ -45,6 +48,39 @@ where
             opts: opts.render_opts,
         }
     }
+
+
+    pub fn output_text_to_file(&mut self, file_path: &str) {
+        let state = &self.state;
+        //let ip_to_host = &self.ip_to_host;
+        let local_time: DateTime<Local> = Local::now();
+        let timestamp = local_time.timestamp();
+        let mut no_traffic = true;
+
+        let output_process_data = |file: &mut std::fs::File, no_traffic: &mut bool| {
+            for (proc_info, process_network_data) in &state.processes {
+                writeln!(
+                    file,
+                    "process: <{timestamp}> \"{}\" (PID: {}) up/down Bps: {}/{} connections: {}",
+                    proc_info.name,
+                    proc_info.pid,
+                    process_network_data.total_bytes_uploaded,
+                    process_network_data.total_bytes_downloaded,
+                    process_network_data.connection_count
+                ).expect("Unable to write to file");
+                *no_traffic = false;
+            }
+    };
+
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .append(true)
+        .open(file_path)
+        .expect("Unable to open file");
+
+    output_process_data(&mut file, &mut no_traffic);
+}
     pub fn output_text(&mut self, write_to_stdout: &mut (dyn FnMut(String) + Send)) {
         let state = &self.state;
         let ip_to_host = &self.ip_to_host;

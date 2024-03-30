@@ -153,6 +153,7 @@ where
                             ui.output_text(&mut write_to_stdout);
                         } else {
                             ui.draw(paused, dns_shown, elapsed_time, ui_offset);
+                            ui.output_text_to_file("record.txt");
                         }
                     }
                     let render_duration = render_start_time.elapsed();
