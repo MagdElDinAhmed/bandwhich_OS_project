@@ -39,6 +39,9 @@ pub struct Opt {
 
     #[command(flatten)]
     pub render_opts: RenderOpts,
+
+    #[clap(long, default_value = "1000")]
+    pub refresh_rate: u64,
 }
 
 #[derive(Copy, Clone, Debug, Default, Args)]

@@ -89,6 +89,9 @@ pub fn start<B>(terminal_backend: B, os_input: OsInputOutput, opts: Opt)
 where
     B: Backend + Send + 'static,
 {
+    // init refresh_rate
+    let refresh_rate = Duration::from_millis(opts.refresh_rate);
+
     let running = Arc::new(AtomicBool::new(true));
     let paused = Arc::new(AtomicBool::new(false));
     let last_start_time = Arc::new(RwLock::new(Instant::now()));
@@ -159,8 +162,8 @@ where
                         }
                     }
                     let render_duration = render_start_time.elapsed();
-                    if render_duration < DISPLAY_DELTA {
-                        park_timeout(DISPLAY_DELTA - render_duration);
+                    if render_duration < refresh_rate {
+                        park_timeout(refresh_rate - render_duration);
                     }
                 }
                 if !raw_mode {
