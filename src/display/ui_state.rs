@@ -85,6 +85,9 @@ pub struct UIState {
     pub processes: Vec<(ProcessInfo, NetworkData)>,
     pub remote_addresses: Vec<(IpAddr, NetworkData)>,
     pub connections: Vec<(Connection, ConnectionData)>,
+    pub processes_total: Vec<(ProcessInfo, NetworkData)>,
+    pub remote_addresses_total: Vec<(IpAddr, NetworkData)>,
+    pub connections_total: Vec<(Connection, ConnectionData)>,
     pub total_bytes_downloaded: u128,
     pub total_bytes_uploaded: u128,
     pub cumulative_mode: bool,
@@ -93,6 +96,9 @@ pub struct UIState {
     pub processes_map: HashMap<ProcessInfo, NetworkData>,
     pub remote_addresses_map: HashMap<IpAddr, NetworkData>,
     pub connections_map: HashMap<Connection, ConnectionData>,
+    pub processes_map_total: HashMap<ProcessInfo, NetworkData>,
+    pub remote_addresses_map_total: HashMap<IpAddr, NetworkData>,
+    pub connections_map_total: HashMap<Connection, ConnectionData>,
     /// Used for reducing logging noise.
     known_orphan_sockets: VecDeque<LocalSocket>,
 }
@@ -207,22 +213,27 @@ impl UIState {
             connection_data.divide_by(divide_by)
         }
 
-        if self.cumulative_mode {
-            merge_bandwidth(&mut self.processes_map, processes);
-            merge_bandwidth(&mut self.remote_addresses_map, remote_addresses);
-            merge_bandwidth(&mut self.connections_map, connections);
-            self.total_bytes_downloaded += total_bytes_downloaded / divide_by;
-            self.total_bytes_uploaded += total_bytes_uploaded / divide_by;
-        } else {
-            self.processes_map = processes;
-            self.remote_addresses_map = remote_addresses;
-            self.connections_map = connections;
-            self.total_bytes_downloaded = total_bytes_downloaded / divide_by;
-            self.total_bytes_uploaded = total_bytes_uploaded / divide_by;
-        }
+        //calculate total bandwidth and bit rate at all times
+        let processes_copy = self.processes_map.clone();
+        let remote_addresses_copy = self.remote_addresses_map.clone();
+        let connections_copy = self.connections_map.clone();
+        merge_bandwidth(&mut self.processes_map_total, processes_copy);
+        merge_bandwidth(&mut self.remote_addresses_map_total, remote_addresses_copy);
+        merge_bandwidth(&mut self.connections_map_total, connections_copy);
+
+        
+        self.processes_map = processes;
+        self.remote_addresses_map = remote_addresses;
+        self.connections_map = connections;
+        self.total_bytes_downloaded = total_bytes_downloaded / divide_by;
+        self.total_bytes_uploaded = total_bytes_uploaded / divide_by;
+        
         self.processes = sort_and_prune(&mut self.processes_map);
         self.remote_addresses = sort_and_prune(&mut self.remote_addresses_map);
         self.connections = sort_and_prune(&mut self.connections_map);
+        self.processes_total = sort_and_prune(&mut self.processes_map_total);
+        self.remote_addresses_total = sort_and_prune(&mut self.remote_addresses_map_total);
+        self.connections_total = sort_and_prune(&mut self.connections_map_total);
     }
 }
 

@@ -229,7 +229,44 @@ impl Table {
                 "Rate (Up / Down)"
             },
         ];
-        let rows = state
+        if state.cumulative_mode {
+            let rows = state
+            .connections_total
+            .iter()
+            .map(|(connection, connection_data)| {
+                [
+                    display_connection_string(
+                        connection,
+                        ip_to_host,
+                        &connection_data.interface_name,
+                    ),
+                    connection_data.process_name.to_string(),
+                    display_upload_and_download(
+                        connection_data,
+                        state.unit_family,
+                        state.cumulative_mode,
+                    ),
+                ]
+            })
+            .collect();
+            let column_selector = Rc::new(|layout: &D| match layout {
+                D::C2(_) => vec![0, 2],
+                D::C3(_) => vec![0, 1, 2],
+                D::C4(_) => unreachable!(),
+            });
+
+            Table {
+                title,
+                width_cutoffs,
+                data: NColsTableData {
+                    column_names,
+                    rows,
+                    column_selector,
+                }
+                .into(),
+            }
+        } else {
+            let rows = state
             .connections
             .iter()
             .map(|(connection, connection_data)| {
@@ -248,22 +285,26 @@ impl Table {
                 ]
             })
             .collect();
-        let column_selector = Rc::new(|layout: &D| match layout {
-            D::C2(_) => vec![0, 2],
-            D::C3(_) => vec![0, 1, 2],
-            D::C4(_) => unreachable!(),
-        });
+            let column_selector = Rc::new(|layout: &D| match layout {
+                D::C2(_) => vec![0, 2],
+                D::C3(_) => vec![0, 1, 2],
+                D::C4(_) => unreachable!(),
+            });
 
-        Table {
-            title,
-            width_cutoffs,
-            data: NColsTableData {
-                column_names,
-                rows,
-                column_selector,
+            Table {
+                title,
+                width_cutoffs,
+                data: NColsTableData {
+                    column_names,
+                    rows,
+                    column_selector,
+                }
+                .into(),
             }
-            .into(),
         }
+        
+
+        
     }
 
     pub fn create_processes_table(state: &UIState) -> Self {
@@ -287,37 +328,74 @@ impl Table {
                 "Rate (Up / Down)"
             },
         ];
-        let rows = state
-            .processes
-            .iter()
-            .map(|(proc_info, data_for_process)| {
-                [
-                    proc_info.name.to_string(),
-                    proc_info.pid.to_string(),
-                    data_for_process.connection_count.to_string(),
-                    display_upload_and_download(
-                        data_for_process,
-                        state.unit_family,
-                        state.cumulative_mode,
-                    ),
-                ]
-            })
-            .collect();
-        let column_selector = Rc::new(|layout: &D| match layout {
-            D::C2(_) => vec![0, 3],
-            D::C3(_) => vec![0, 2, 3],
-            D::C4(_) => vec![0, 1, 2, 3],
-        });
 
-        Table {
-            title,
-            width_cutoffs,
-            data: NColsTableData {
-                column_names,
-                rows,
-                column_selector,
+        if state.cumulative_mode {
+            let rows = state
+                .processes_total
+                .iter()
+                .map(|(proc_info, data_for_process)| {
+                    [
+                        proc_info.name.to_string(),
+                        proc_info.pid.to_string(),
+                        data_for_process.connection_count.to_string(),
+                        display_upload_and_download(
+                            data_for_process,
+                            state.unit_family,
+                            state.cumulative_mode,
+                        ),
+                    ]
+                })
+                .collect();
+            let column_selector = Rc::new(|layout: &D| match layout {
+                D::C2(_) => vec![0, 3],
+                D::C3(_) => vec![0, 2, 3],
+                D::C4(_) => vec![0, 1, 2, 3],
+            });
+
+            Table {
+                title,
+                width_cutoffs,
+                data: NColsTableData {
+                    column_names,
+                    rows,
+                    column_selector,
+                }
+                .into(),
             }
-            .into(),
+        }
+        else {
+            let rows = state
+                .processes
+                .iter()
+                .map(|(proc_info, data_for_process)| {
+                    [
+                        proc_info.name.to_string(),
+                        proc_info.pid.to_string(),
+                        data_for_process.connection_count.to_string(),
+                        display_upload_and_download(
+                            data_for_process,
+                            state.unit_family,
+                            state.cumulative_mode,
+                        ),
+                    ]
+                })
+                .collect();
+            let column_selector = Rc::new(|layout: &D| match layout {
+                D::C2(_) => vec![0, 3],
+                D::C3(_) => vec![0, 2, 3],
+                D::C4(_) => vec![0, 1, 2, 3],
+            });
+
+            Table {
+                title,
+                width_cutoffs,
+                data: NColsTableData {
+                    column_names,
+                    rows,
+                    column_selector,
+                }
+                .into(),
+            }
         }
     }
 
@@ -344,8 +422,9 @@ impl Table {
                 "Rate (Up / Down)"
             },
         ];
-        let rows = state
-            .remote_addresses
+        if state.cumulative_mode {
+            let rows = state
+            .remote_addresses_total
             .iter()
             .map(|(remote_address, data_for_remote_address)| {
                 let remote_address = display_ip_or_host(*remote_address, ip_to_host);
@@ -360,21 +439,55 @@ impl Table {
                 ]
             })
             .collect();
-        let column_selector = Rc::new(|layout: &D| match layout {
-            D::C2(_) => vec![0, 2],
-            D::C3(_) => vec![0, 1, 2],
-            D::C4(_) => unreachable!(),
-        });
+            let column_selector = Rc::new(|layout: &D| match layout {
+                D::C2(_) => vec![0, 2],
+                D::C3(_) => vec![0, 1, 2],
+                D::C4(_) => unreachable!(),
+            });
 
-        Table {
-            title,
-            width_cutoffs,
-            data: NColsTableData {
-                column_names,
-                rows,
-                column_selector,
+            Table {
+                title,
+                width_cutoffs,
+                data: NColsTableData {
+                    column_names,
+                    rows,
+                    column_selector,
+                }
+                .into(),
             }
-            .into(),
+        } else {
+            let rows = state
+                .remote_addresses
+                .iter()
+                .map(|(remote_address, data_for_remote_address)| {
+                    let remote_address = display_ip_or_host(*remote_address, ip_to_host);
+                    [
+                        remote_address,
+                        data_for_remote_address.connection_count.to_string(),
+                        display_upload_and_download(
+                            data_for_remote_address,
+                            state.unit_family,
+                            state.cumulative_mode,
+                        ),
+                    ]
+                })
+                .collect();
+            let column_selector = Rc::new(|layout: &D| match layout {
+                D::C2(_) => vec![0, 2],
+                D::C3(_) => vec![0, 1, 2],
+                D::C4(_) => unreachable!(),
+            });
+
+            Table {
+                title,
+                width_cutoffs,
+                data: NColsTableData {
+                    column_names,
+                    rows,
+                    column_selector,
+                }
+                .into(),
+            }
         }
     }
 

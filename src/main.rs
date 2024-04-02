@@ -159,6 +159,9 @@ where
                             ui.output_process_data_to_file("process_record.txt");
                             ui.output_connections_data_to_file("connection_record.txt");
                             ui.output_remote_addresses_data_to_file("remote_addresses_record.txt");
+                            ui.output_process_total_data_to_file("process_total_record.txt");
+                            ui.output_connections_total_data_to_file("connection_total_record.txt");
+                            ui.output_remote_addresses_total_data_to_file("remote_addresses_total_record.txt");
                         }
                     }
                     let render_duration = render_start_time.elapsed();

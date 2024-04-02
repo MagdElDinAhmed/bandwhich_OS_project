@@ -148,6 +148,104 @@ where
 
         output_adressess_data(&mut file, &mut no_traffic);
     }
+    pub fn output_process_total_data_to_file(&mut self, file_path: &str) {
+        let state = &self.state;
+        //let ip_to_host = &self.ip_to_host;
+        let local_time: DateTime<Local> = Local::now();
+        let timestamp = local_time.timestamp();
+        let mut no_traffic = true;
+
+        let output_process_data = |file: &mut std::fs::File, no_traffic: &mut bool| {
+            for (proc_info, process_network_data) in &state.processes_total {
+                writeln!(
+                    file,
+                    "process: <{timestamp}> \"{}\" (PID: {}) up/down B: {}/{} connections: {}",
+                    proc_info.name,
+                    proc_info.pid,
+                    process_network_data.total_bytes_uploaded,
+                    process_network_data.total_bytes_downloaded,
+                    process_network_data.connection_count
+                ).expect("Unable to write to file");
+                *no_traffic = false;
+            }
+        };
+
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .append(true)
+            .open(file_path)
+            .expect("Unable to open file");
+
+        output_process_data(&mut file, &mut no_traffic);
+    }
+
+    pub fn output_connections_total_data_to_file(&mut self, file_path: &str) {
+        let state = &self.state;
+        let ip_to_host = &self.ip_to_host;
+        let local_time: DateTime<Local> = Local::now();
+        let timestamp = local_time.timestamp();
+        let mut no_traffic = true;
+
+        let output_connections_data =
+            |file: &mut std::fs::File, no_traffic: &mut bool| {
+                for (connection, connection_network_data) in &state.connections_total {
+                    writeln!(
+                        file,
+                        "connection: <{timestamp}> {} up/down B: {}/{} process: \"{}\"",
+                        display_connection_string(
+                            connection,
+                            ip_to_host,
+                            &connection_network_data.interface_name,
+                        ),
+                        connection_network_data.total_bytes_uploaded,
+                        connection_network_data.total_bytes_downloaded,
+                        connection_network_data.process_name
+                    ).expect("Unable to write to file");
+                    *no_traffic = false;
+                }
+            };
+
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .append(true)
+            .open(file_path)
+            .expect("Unable to open file");
+
+        output_connections_data(&mut file, &mut no_traffic);
+    }
+
+    pub fn output_remote_addresses_total_data_to_file(&mut self, file_path: &str) {
+        let state = &self.state;
+        let ip_to_host = &self.ip_to_host;
+        let local_time: DateTime<Local> = Local::now();
+        let timestamp = local_time.timestamp();
+        let mut no_traffic = true;
+
+        let output_adressess_data = |file: &mut std::fs::File, no_traffic: &mut bool| {
+            for (remote_address, remote_address_network_data) in &state.remote_addresses_total {
+                writeln!(
+                    file,
+                    "remote_address: <{timestamp}> {} up/down B: {}/{} connections: {}",
+                    display_ip_or_host(*remote_address, ip_to_host),
+                    remote_address_network_data.total_bytes_uploaded,
+                    remote_address_network_data.total_bytes_downloaded,
+                    remote_address_network_data.connection_count
+                ).expect("Unable to write to file");
+                *no_traffic = false;
+            }
+        };
+
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .append(true)
+            .open(file_path)
+            .expect("Unable to open file");
+
+        output_adressess_data(&mut file, &mut no_traffic);
+    }
 
 
 
