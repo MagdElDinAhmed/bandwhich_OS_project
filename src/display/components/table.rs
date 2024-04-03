@@ -229,6 +229,8 @@ impl Table {
                 "Rate (Up / Down)"
             },
         ];
+        //print data from the _total hashmap if cumulative mode is enabled
+        //otherwise print data from the normal hashmap for bitrate
         if state.cumulative_mode {
             let rows = state
             .connections_total

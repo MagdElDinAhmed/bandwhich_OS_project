@@ -85,6 +85,7 @@ pub struct UIState {
     pub processes: Vec<(ProcessInfo, NetworkData)>,
     pub remote_addresses: Vec<(IpAddr, NetworkData)>,
     pub connections: Vec<(Connection, ConnectionData)>,
+    /// Total bandwidth used by each process, remote address, and connection.
     pub processes_total: Vec<(ProcessInfo, NetworkData)>,
     pub remote_addresses_total: Vec<(IpAddr, NetworkData)>,
     pub connections_total: Vec<(Connection, ConnectionData)>,
@@ -96,6 +97,7 @@ pub struct UIState {
     pub processes_map: HashMap<ProcessInfo, NetworkData>,
     pub remote_addresses_map: HashMap<IpAddr, NetworkData>,
     pub connections_map: HashMap<Connection, ConnectionData>,
+    /// Total bandwidth map used by each process, remote address, and connection.
     pub processes_map_total: HashMap<ProcessInfo, NetworkData>,
     pub remote_addresses_map_total: HashMap<IpAddr, NetworkData>,
     pub connections_map_total: HashMap<Connection, ConnectionData>,
@@ -214,6 +216,9 @@ impl UIState {
         }
 
         //calculate total bandwidth and bit rate at all times
+        //We create copies of the maps to avoid borrowing issues
+        //We then merge with the total maps and sort and prune the maps
+        //the _total maps are used to calculate the total bandwidth
         let processes_copy = self.processes_map.clone();
         let remote_addresses_copy = self.remote_addresses_map.clone();
         let connections_copy = self.connections_map.clone();
@@ -221,7 +226,8 @@ impl UIState {
         merge_bandwidth(&mut self.remote_addresses_map_total, remote_addresses_copy);
         merge_bandwidth(&mut self.connections_map_total, connections_copy);
 
-        
+        //update the UIState struct
+        //These maps are used to calculate the bit rate
         self.processes_map = processes;
         self.remote_addresses_map = remote_addresses;
         self.connections_map = connections;
