@@ -43,7 +43,7 @@ pub struct Opt {
     #[clap(long, default_value = "1000")]
     pub refresh_rate: u64,
     
-    #[clap(long = "alert")]
+    #[clap(long = "alert", default_value = "0")]
     pub alert: u64,
 }
 

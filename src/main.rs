@@ -145,7 +145,9 @@ where
                         let ui_offset = ui_offset.load(Ordering::SeqCst);
                         if !paused {
                             ui.update_state(sockets_to_procs, utilization, ip_to_host);
-                            ui.check_alerts(opts.alert);
+                            if opts.alert>0 {
+                                ui.check_alerts(opts.alert);
+                            }
                         }
                         let elapsed_time = elapsed_time(
                             *last_start_time.read().unwrap(),
