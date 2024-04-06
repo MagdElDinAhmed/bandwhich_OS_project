@@ -48,7 +48,15 @@ where
             opts: opts.render_opts,
         }
     }
-
+    pub fn check_alerts(&self, threshold: u64) {
+        let threshold_bytes = threshold * 1024;
+        for (proc_info, process_network_data) in &self.state.processes_total {
+            let total_bandwidth = process_network_data.total_bytes_downloaded + process_network_data.total_bytes_uploaded;
+            if total_bandwidth > threshold_bytes.into() {
+                println!("Alert: Process with PID: {} has exceeded the bandwidth threshold of {} kilobytes",proc_info.pid, threshold);
+            }
+        }
+    }
     //this function is used to output the process data to a file
     pub fn output_process_data_to_file(&mut self, file_path: &str) {
         let state = &self.state;
