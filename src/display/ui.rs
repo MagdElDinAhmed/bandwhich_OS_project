@@ -49,25 +49,34 @@ where
         }
     }
 
-
+    //this function is used to output the process data to a file
     pub fn output_process_data_to_file(&mut self, file_path: &str) {
         let state = &self.state;
-        //let ip_to_host = &self.ip_to_host;
         let local_time: DateTime<Local> = Local::now();
         let timestamp = local_time.timestamp();
         let mut no_traffic = true;
 
         let output_process_data = |file: &mut std::fs::File, no_traffic: &mut bool| {
+            let is_file_empty = file.metadata().map(|metadata| metadata.len() == 0).unwrap_or(false);
+            if is_file_empty {
+                writeln!(
+                    file,
+                    "timestamp,process_name,pid,bytes_uploaded,bytes_downloaded,connection_count"
+                )
+                .expect("Unable to write to file");
+            }
             for (proc_info, process_network_data) in &state.processes {
                 writeln!(
                     file,
-                    "process: <{timestamp}> \"{}\" (PID: {}) up/down Bps: {}/{} connections: {}",
+                    "{},{},{},{},{},{}",
+                    timestamp,
                     proc_info.name,
                     proc_info.pid,
                     process_network_data.total_bytes_uploaded,
                     process_network_data.total_bytes_downloaded,
                     process_network_data.connection_count
-                ).expect("Unable to write to file");
+                )
+                .expect("Unable to write to file");
                 *no_traffic = false;
             }
         };
@@ -82,6 +91,7 @@ where
         output_process_data(&mut file, &mut no_traffic);
     }
 
+    //this function is used to output the connection data to a file
     pub fn output_connections_data_to_file(&mut self, file_path: &str) {
         let state = &self.state;
         let ip_to_host = &self.ip_to_host;
@@ -91,15 +101,24 @@ where
 
         let output_connections_data =
             |file: &mut std::fs::File, no_traffic: &mut bool| {
+                let is_file_empty = file.metadata().map(|metadata| metadata.len() == 0).unwrap_or(false);
+                if is_file_empty {
+                    writeln!(
+                        file,
+                        "timestamp,interface_name,local_socket_port,target_ip,remote_socket_port,local_socket_protocol,bytes_uploaded,bytes_downloaded,process_name"
+                    )
+                    .expect("Unable to write to file");
+                }
                 for (connection, connection_network_data) in &state.connections {
                     writeln!(
                         file,
-                        "connection: <{timestamp}> {} up/down Bps: {}/{} process: \"{}\"",
-                        display_connection_string(
-                            connection,
-                            ip_to_host,
-                            &connection_network_data.interface_name,
-                        ),
+                        "{},{},{},{},{},{},{},{},{}",
+                        timestamp,
+                        &connection_network_data.interface_name,
+                        connection.local_socket.port,
+                        display_ip_or_host(connection.remote_socket.ip, ip_to_host),
+                        connection.remote_socket.port,
+                        connection.local_socket.protocol,
                         connection_network_data.total_bytes_uploaded,
                         connection_network_data.total_bytes_downloaded,
                         connection_network_data.process_name
@@ -118,6 +137,7 @@ where
         output_connections_data(&mut file, &mut no_traffic);
     }
 
+    //this function is used to output the remote address data to a file
     pub fn output_remote_addresses_data_to_file(&mut self, file_path: &str) {
         let state = &self.state;
         let ip_to_host = &self.ip_to_host;
@@ -126,10 +146,19 @@ where
         let mut no_traffic = true;
 
         let output_adressess_data = |file: &mut std::fs::File, no_traffic: &mut bool| {
+            let is_file_empty = file.metadata().map(|metadata| metadata.len() == 0).unwrap_or(false);
+            if is_file_empty {
+                writeln!(
+                    file,
+                    "timestamp,remote_address,bytes_uploaded,bytes_downloaded,connections_count"
+                )
+                .expect("Unable to write to file");
+            }
             for (remote_address, remote_address_network_data) in &state.remote_addresses {
                 writeln!(
                     file,
-                    "remote_address: <{timestamp}> {} up/down Bps: {}/{} connections: {}",
+                    "{},{},{},{},{}",
+                    timestamp,
                     display_ip_or_host(*remote_address, ip_to_host),
                     remote_address_network_data.total_bytes_uploaded,
                     remote_address_network_data.total_bytes_downloaded,
@@ -148,6 +177,8 @@ where
 
         output_adressess_data(&mut file, &mut no_traffic);
     }
+    
+    //this function is used to output the total process data to a file
     pub fn output_process_total_data_to_file(&mut self, file_path: &str) {
         let state = &self.state;
         //let ip_to_host = &self.ip_to_host;
@@ -156,16 +187,26 @@ where
         let mut no_traffic = true;
 
         let output_process_data = |file: &mut std::fs::File, no_traffic: &mut bool| {
+            let is_file_empty = file.metadata().map(|metadata| metadata.len() == 0).unwrap_or(false);
+            if is_file_empty {
+                writeln!(
+                    file,
+                    "timestamp,process_name,pid,bytes_uploaded,bytes_downloaded,connection_count"
+                )
+                .expect("Unable to write to file");
+            }
             for (proc_info, process_network_data) in &state.processes_total {
                 writeln!(
                     file,
-                    "process: <{timestamp}> \"{}\" (PID: {}) up/down B: {}/{} connections: {}",
+                    "{},{},{},{},{},{}",
+                    timestamp,
                     proc_info.name,
                     proc_info.pid,
                     process_network_data.total_bytes_uploaded,
                     process_network_data.total_bytes_downloaded,
                     process_network_data.connection_count
-                ).expect("Unable to write to file");
+                )
+                .expect("Unable to write to file");
                 *no_traffic = false;
             }
         };
@@ -180,6 +221,7 @@ where
         output_process_data(&mut file, &mut no_traffic);
     }
 
+    //this function is used to output the total connection data to a file
     pub fn output_connections_total_data_to_file(&mut self, file_path: &str) {
         let state = &self.state;
         let ip_to_host = &self.ip_to_host;
@@ -189,15 +231,24 @@ where
 
         let output_connections_data =
             |file: &mut std::fs::File, no_traffic: &mut bool| {
+                let is_file_empty = file.metadata().map(|metadata| metadata.len() == 0).unwrap_or(false);
+                if is_file_empty {
+                    writeln!(
+                        file,
+                        "timestamp,interface_name,local_socket_port,target_ip,remote_socket_port,local_socket_protocol,bytes_uploaded,bytes_downloaded,process_name"
+                    )
+                    .expect("Unable to write to file");
+                }
                 for (connection, connection_network_data) in &state.connections_total {
                     writeln!(
                         file,
-                        "connection: <{timestamp}> {} up/down B: {}/{} process: \"{}\"",
-                        display_connection_string(
-                            connection,
-                            ip_to_host,
-                            &connection_network_data.interface_name,
-                        ),
+                        "{},{},{},{},{},{},{},{},{}",
+                        timestamp,
+                        &connection_network_data.interface_name,
+                        connection.local_socket.port,
+                        display_ip_or_host(connection.remote_socket.ip, ip_to_host),
+                        connection.remote_socket.port,
+                        connection.local_socket.protocol,
                         connection_network_data.total_bytes_uploaded,
                         connection_network_data.total_bytes_downloaded,
                         connection_network_data.process_name
@@ -216,6 +267,7 @@ where
         output_connections_data(&mut file, &mut no_traffic);
     }
 
+    //this function is used to output the total remote address data to a file
     pub fn output_remote_addresses_total_data_to_file(&mut self, file_path: &str) {
         let state = &self.state;
         let ip_to_host = &self.ip_to_host;
@@ -224,10 +276,19 @@ where
         let mut no_traffic = true;
 
         let output_adressess_data = |file: &mut std::fs::File, no_traffic: &mut bool| {
+            let is_file_empty = file.metadata().map(|metadata| metadata.len() == 0).unwrap_or(false);
+            if is_file_empty {
+                writeln!(
+                    file,
+                    "timestamp,remote_address,bytes_uploaded,bytes_downloaded,connections_count"
+                )
+                .expect("Unable to write to file");
+            }
             for (remote_address, remote_address_network_data) in &state.remote_addresses_total {
                 writeln!(
                     file,
-                    "remote_address: <{timestamp}> {} up/down B: {}/{} connections: {}",
+                    "{},{},{},{},{}",
+                    timestamp,
                     display_ip_or_host(*remote_address, ip_to_host),
                     remote_address_network_data.total_bytes_uploaded,
                     remote_address_network_data.total_bytes_downloaded,
