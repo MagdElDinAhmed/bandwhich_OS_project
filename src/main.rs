@@ -23,7 +23,7 @@ use crossterm::{
     event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     terminal,
 };
-use display::{elapsed_time, RawTerminalBackend, Ui};
+use display::{elapsed_time, RawTerminalBackend, Ui, DataCollector};
 use network::{
     dns::{self, IpTable},
     LocalSocket, Sniffer, Utilization,
