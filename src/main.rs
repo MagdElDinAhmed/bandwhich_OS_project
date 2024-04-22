@@ -15,9 +15,10 @@ use std::{
         Arc, Mutex, RwLock,
     },
     thread::{self, park_timeout},
-    time::{Duration, Instant},
+    time::{Duration, Instant, SystemTime},
 };
 
+use chrono::Utc;
 use clap::Parser;
 use crossterm::{
     event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
@@ -172,6 +173,13 @@ where
                             ui.output_process_total_data_to_file("process_total_record.csv", &mut data_collector);
                             ui.output_connections_total_data_to_file("connection_total_record.csv", &mut data_collector);
                             ui.output_remote_addresses_total_data_to_file("remote_addresses_total_record.csv", &mut data_collector);
+                            let one_month_ago = Utc::now() - Duration::from_secs(60 * 60 * 24 * 30);
+                            data_collector.save_process_rate_data(one_month_ago);
+                            data_collector.save_connection_rate_data(one_month_ago);
+                            data_collector.save_remote_address_rate_data(one_month_ago);
+                            data_collector.save_process_total_data(one_month_ago);
+                            data_collector.save_connection_total_data(one_month_ago);
+                            data_collector.save_remote_address_total_data(one_month_ago);
                         }
                     }
                     let render_duration = render_start_time.elapsed();

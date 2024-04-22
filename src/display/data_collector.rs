@@ -382,4 +382,199 @@ impl DataCollector {
         }
     }
 
+    pub fn get_process_rate_subset(&self, process_name: &str, start_datetime: DateTime<Utc>) -> BTreeMap<DateTime<Utc>, &DataPoint> {
+        let mut subset = BTreeMap::new();
+        match self.process_rate_data.get(process_name) {
+            Some(data) => {
+                for (timestamp, value) in data {
+                    if timestamp >= &start_datetime {
+                        subset.insert(timestamp.clone(), value);
+                    }
+                }
+            },
+            None => {},
+        }
+        subset
+    }
+
+    pub fn get_connection_rate_subset(&self, connection_name: &str, start_datetime: DateTime<Utc>) -> BTreeMap<DateTime<Utc>, &DataPoint> {
+        let mut subset = BTreeMap::new();
+        match self.connection_rate_data.get(connection_name) {
+            Some(data) => {
+                for (timestamp, value) in data {
+                    if timestamp >= &start_datetime {
+                        subset.insert(timestamp.clone(), value);
+                    }
+                }
+            },
+            None => {},
+        }
+        subset
+    }
+
+    pub fn get_remote_address_rate_subset(&self, remote_address_name: &str, start_datetime: DateTime<Utc>) -> BTreeMap<DateTime<Utc>, &DataPoint> {
+        let mut subset = BTreeMap::new();
+        match self.remote_address_rate_data.get(remote_address_name) {
+            Some(data) => {
+                for (timestamp, value) in data {
+                    if timestamp >= &start_datetime {
+                        subset.insert(timestamp.clone(), value);
+                    }
+                }
+            },
+            None => {},
+        }
+        subset
+    }
+
+    pub fn get_process_total_subset(&self, process_name: &str, start_datetime: DateTime<Utc>) -> BTreeMap<DateTime<Utc>, &DataPoint> {
+        let mut subset = BTreeMap::new();
+        match self.process_total_data.get(process_name) {
+            Some(data) => {
+                for (timestamp, value) in data {
+                    if timestamp >= &start_datetime {
+                        subset.insert(timestamp.clone(), value);
+                    }
+                }
+            },
+            None => {},
+        }
+        subset
+    }
+
+    pub fn get_connection_total_subset(&self, connection_name: &str, start_datetime: DateTime<Utc>) -> BTreeMap<DateTime<Utc>, &DataPoint> {
+        let mut subset = BTreeMap::new();
+        match self.connection_total_data.get(connection_name) {
+            Some(data) => {
+                for (timestamp, value) in data {
+                    if timestamp >= &start_datetime {
+                        subset.insert(timestamp.clone(), value);
+                    }
+                }
+            },
+            None => {},
+        }
+        subset
+    }
+
+    pub fn get_remote_address_total_subset(&self, remote_address_name: &str, start_datetime: DateTime<Utc>) -> BTreeMap<DateTime<Utc>, &DataPoint> {
+        let mut subset = BTreeMap::new();
+        match self.remote_address_total_data.get(remote_address_name) {
+            Some(data) => {
+                for (timestamp, value) in data {
+                    if timestamp >= &start_datetime {
+                        subset.insert(timestamp.clone(), value);
+                    }
+                }
+            },
+            None => {},
+        }
+        subset
+    }
+
+    pub fn save_process_rate_data(&self, start_datetime: DateTime<Utc>) {
+        let file_path = "process_data_collected.csv";
+        let mut writer = csv::Writer::from_path(file_path).unwrap();
+        
+        for (process_name, _) in &self.process_rate_data {
+            let subset = self.get_process_rate_subset(process_name, start_datetime);
+            for (timestamp, value) in subset {
+                writer.write_record(&[
+                    process_name.clone(),
+                    timestamp.to_rfc3339(),
+                    value.value_up.to_string(),
+                    value.value_down.to_string(),
+                ]).unwrap();
+            }
+        }
+        writer.flush().unwrap();
+    }
+
+    pub fn save_connection_rate_data(&self, start_datetime: DateTime<Utc>) {
+        let file_path = "connection_data_collected.csv";
+        let mut writer = csv::Writer::from_path(file_path).unwrap();
+        for (connection_name,_) in &self.connection_rate_data {
+            let subset = self.get_connection_rate_subset(connection_name, start_datetime);
+            for (timestamp, value) in subset {
+                writer.write_record(&[
+                    connection_name.clone(),
+                    timestamp.to_rfc3339(),
+                    value.value_up.to_string(),
+                    value.value_down.to_string(),
+                ]).unwrap();
+            }
+        }
+        writer.flush().unwrap();
+    }
+
+    pub fn save_remote_address_rate_data(&self, start_datetime: DateTime<Utc>) {
+        let file_path = "remote_address_data_collected.csv";
+        let mut writer = csv::Writer::from_path(file_path).unwrap();
+        for (remote_address_name,_) in &self.remote_address_rate_data {
+            let subset = self.get_remote_address_rate_subset(remote_address_name, start_datetime);
+            for (timestamp, value) in subset {
+                writer.write_record(&[
+                    remote_address_name.clone(),
+                    timestamp.to_rfc3339(),
+                    value.value_up.to_string(),
+                    value.value_down.to_string(),
+                ]).unwrap();
+            }
+        }
+        writer.flush().unwrap();
+    }
+
+    pub fn save_process_total_data(&self, start_datetime: DateTime<Utc>) {
+        let file_path = "process_total_data_collected.csv";
+        let mut writer = csv::Writer::from_path(file_path).unwrap();
+        for (process_name,_) in &self.process_total_data {
+            let subset = self.get_process_total_subset(process_name, start_datetime);
+            for (timestamp, value) in subset {
+                writer.write_record(&[
+                    process_name.clone(),
+                    timestamp.to_rfc3339(),
+                    value.value_up.to_string(),
+                    value.value_down.to_string(),
+                ]).unwrap();
+            }
+        }
+        writer.flush().unwrap();
+    }
+
+    pub fn save_connection_total_data(&self, start_datetime: DateTime<Utc>) {
+        let file_path = "connection_total_data_collected.csv";
+        let mut writer = csv::Writer::from_path(file_path).unwrap();
+        for (connection_name,_) in &self.connection_total_data {
+            let subset = self.get_connection_total_subset(connection_name, start_datetime);
+            for (timestamp, value) in subset {
+                writer.write_record(&[
+                    connection_name.clone(),
+                    timestamp.to_rfc3339(),
+                    value.value_up.to_string(),
+                    value.value_down.to_string(),
+                ]).unwrap();
+            }
+        }
+        writer.flush().unwrap();
+    }
+
+    pub fn save_remote_address_total_data(&self, start_datetime: DateTime<Utc>) {
+        let file_path = "remote_address_total_data_collected.csv";
+        let mut writer = csv::Writer::from_path(file_path).unwrap();
+        for (remote_address_name, data) in &self.remote_address_total_data {
+            let subset = self.get_remote_address_total_subset(remote_address_name, start_datetime);
+            for (timestamp, value) in subset {
+                writer.write_record(&[
+                    remote_address_name.clone(),
+                    timestamp.to_rfc3339(),
+                    value.value_up.to_string(),
+                    value.value_down.to_string(),
+                ]).unwrap();
+            }
+        }
+        writer.flush().unwrap();
+    }
+
+
+
 }
