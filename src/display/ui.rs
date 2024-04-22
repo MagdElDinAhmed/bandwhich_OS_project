@@ -195,14 +195,14 @@ where
     }
     
     //this function is used to output the total process data to a file
-    pub fn output_process_total_data_to_file(&mut self, file_path: &str) {
+    pub fn output_process_total_data_to_file(&mut self, file_path: &str, data_collector: &mut DataCollector) {
         let state = &self.state;
         //let ip_to_host = &self.ip_to_host;
         let local_time: DateTime<Local> = Local::now();
         let timestamp = local_time.timestamp();
         let mut no_traffic = true;
 
-        let output_process_data = |file: &mut std::fs::File, no_traffic: &mut bool| {
+        let mut output_process_data = |file: &mut std::fs::File, no_traffic: &mut bool| {
             let is_file_empty = file.metadata().map(|metadata| metadata.len() == 0).unwrap_or(false);
             if is_file_empty {
                 writeln!(
@@ -224,6 +224,11 @@ where
                 )
                 .expect("Unable to write to file");
                 *no_traffic = false;
+                let process_total_file_upload = data_collector.get_process_total_file_upload(proc_info.name.clone());
+                let process_total_file_download = data_collector.get_process_total_file_download(proc_info.name.clone());
+                data_collector.add_process_total_data(proc_info.name.clone(), timestamp,
+                 process_network_data.total_bytes_uploaded + process_total_file_upload,
+                  process_network_data.total_bytes_downloaded + process_total_file_download);
             }
         };
 
@@ -238,14 +243,14 @@ where
     }
 
     //this function is used to output the total connection data to a file
-    pub fn output_connections_total_data_to_file(&mut self, file_path: &str) {
+    pub fn output_connections_total_data_to_file(&mut self, file_path: &str, data_collector: &mut DataCollector) {
         let state = &self.state;
         let ip_to_host = &self.ip_to_host;
         let local_time: DateTime<Local> = Local::now();
         let timestamp = local_time.timestamp();
         let mut no_traffic = true;
 
-        let output_connections_data =
+        let mut output_connections_data =
             |file: &mut std::fs::File, no_traffic: &mut bool| {
                 let is_file_empty = file.metadata().map(|metadata| metadata.len() == 0).unwrap_or(false);
                 if is_file_empty {
@@ -270,6 +275,12 @@ where
                         connection_network_data.process_name
                     ).expect("Unable to write to file");
                     *no_traffic = false;
+
+                    let connection_total_file_upload = data_collector.get_connection_total_file_upload(connection_network_data.interface_name.clone());
+                    let connection_total_file_download = data_collector.get_connection_total_file_download(connection_network_data.interface_name.clone());
+                    data_collector.add_connection_total_data(connection_network_data.interface_name.clone(),timestamp,
+                     connection_network_data.total_bytes_uploaded + connection_total_file_upload,
+                      connection_network_data.total_bytes_downloaded + connection_total_file_download);
                 }
             };
 
@@ -284,14 +295,14 @@ where
     }
 
     //this function is used to output the total remote address data to a file
-    pub fn output_remote_addresses_total_data_to_file(&mut self, file_path: &str) {
+    pub fn output_remote_addresses_total_data_to_file(&mut self, file_path: &str, data_collector: &mut DataCollector) {
         let state = &self.state;
         let ip_to_host = &self.ip_to_host;
         let local_time: DateTime<Local> = Local::now();
         let timestamp = local_time.timestamp();
         let mut no_traffic = true;
 
-        let output_adressess_data = |file: &mut std::fs::File, no_traffic: &mut bool| {
+        let mut output_adressess_data = |file: &mut std::fs::File, no_traffic: &mut bool| {
             let is_file_empty = file.metadata().map(|metadata| metadata.len() == 0).unwrap_or(false);
             if is_file_empty {
                 writeln!(
@@ -311,6 +322,14 @@ where
                     remote_address_network_data.connection_count
                 ).expect("Unable to write to file");
                 *no_traffic = false;
+
+                let remote_address_file_upload_total = data_collector.get_remote_address_total_file_upload(display_ip_or_host(*remote_address, ip_to_host));
+                let remote_address_file_download_total = data_collector.get_remote_address_total_file_download(display_ip_or_host(*remote_address, ip_to_host));
+
+                data_collector.add_remote_address_total_data(display_ip_or_host(*remote_address, ip_to_host), timestamp, 
+                remote_address_network_data.total_bytes_uploaded + remote_address_file_upload_total,
+                 remote_address_network_data.total_bytes_downloaded + remote_address_file_download_total);
+
             }
         };
 

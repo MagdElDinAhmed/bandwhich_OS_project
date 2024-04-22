@@ -95,6 +95,9 @@ where
     data_collector.open_process_rate_file();
     data_collector.open_connection_rate_file();
     data_collector.open_remote_address_rate_file();
+    data_collector.open_process_total_file();
+    data_collector.open_connection_total_file();
+    data_collector.open_remote_address_total_file();
 
     let running = Arc::new(AtomicBool::new(true));
     let paused = Arc::new(AtomicBool::new(false));
@@ -166,9 +169,9 @@ where
                             ui.output_process_data_to_file("process_record.csv",&mut data_collector);
                             ui.output_connections_data_to_file("connection_record.csv", &mut data_collector);
                             ui.output_remote_addresses_data_to_file("remote_addresses_record.csv", &mut data_collector);
-                            ui.output_process_total_data_to_file("process_total_record.csv");
-                            ui.output_connections_total_data_to_file("connection_total_record.csv");
-                            ui.output_remote_addresses_total_data_to_file("remote_addresses_total_record.csv");
+                            ui.output_process_total_data_to_file("process_total_record.csv", &mut data_collector);
+                            ui.output_connections_total_data_to_file("connection_total_record.csv", &mut data_collector);
+                            ui.output_remote_addresses_total_data_to_file("remote_addresses_total_record.csv", &mut data_collector);
                         }
                     }
                     let render_duration = render_start_time.elapsed();
