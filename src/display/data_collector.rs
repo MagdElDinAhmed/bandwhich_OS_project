@@ -1,5 +1,5 @@
 use core::time;
-use std::{collections::HashMap, fs::File};
+use std::{collections::HashMap, collections::BTreeMap, fs::File};
 
 use std::fs::OpenOptions;
 
@@ -7,15 +7,14 @@ use chrono::prelude::*;
 use trust_dns_resolver::proto::Time;
 
 struct DataPoint {
-    timestamp: DateTime<Utc>,
     value_up: u128,
     value_down: u128,
 }
 
 pub struct DataCollector where{
-    process_rate_data: HashMap<String, Vec<DataPoint>>,
-    connection_rate_data: HashMap<String, Vec<DataPoint>>,
-    remote_address_rate_data: HashMap<String, Vec<DataPoint>>,
+    process_rate_data: HashMap<String, BTreeMap<DateTime<Utc>,DataPoint>>,
+    connection_rate_data: HashMap<String, BTreeMap<DateTime<Utc>,DataPoint>>,
+    remote_address_rate_data: HashMap<String, BTreeMap<DateTime<Utc>,DataPoint>>,
 }
 
 impl DataCollector {
@@ -41,9 +40,8 @@ impl DataCollector {
                     // Store the process name and rate in the process_rate_data HashMap
                     self.process_rate_data
                         .entry(process_name)
-                        .or_insert(Vec::new())
-                        .push(DataPoint {
-                            timestamp: timestamp_read,
+                        .or_insert(BTreeMap::new())
+                        .insert(timestamp_read, DataPoint {
                             value_up: up_rate,
                             value_down: down_rate,
                         });
@@ -68,9 +66,8 @@ impl DataCollector {
                     // Store the connection name and rate in the process_rate_data HashMap
                     self.connection_rate_data
                         .entry(connection_name)
-                        .or_insert(Vec::new())
-                        .push(DataPoint {
-                            timestamp: timestamp_read,
+                        .or_insert(BTreeMap::new())
+                        .insert(timestamp_read,DataPoint {
                             value_up: up_rate,
                             value_down: down_rate,
                         });
@@ -94,9 +91,8 @@ impl DataCollector {
                     // Store the process name and rate in the process_rate_data HashMap
                     self.remote_address_rate_data
                         .entry(remote_address_name)
-                        .or_insert(Vec::new())
-                        .push(DataPoint {
-                            timestamp: timestamp_read,
+                        .or_insert(BTreeMap::new())
+                        .insert(timestamp_read,DataPoint {
                             value_up: up_rate,
                             value_down: down_rate,
                         });
@@ -108,46 +104,40 @@ impl DataCollector {
 
     pub fn add_process_rate_data(&mut self, process_name: String, timestamp: i64, up_rate: u128, down_rate: u128) {
         let timestamp_read = DateTime::<Utc>::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(timestamp, 0).unwrap(), Utc);
-        let data_point = DataPoint {
-            timestamp: timestamp_read,
-            value_up: up_rate,
-            value_down: down_rate,
-        };
+
         self.process_rate_data
             .entry(process_name)
-            .or_insert(Vec::new())
-            .push(data_point);
+            .or_insert(BTreeMap::new())
+            .insert(timestamp_read,DataPoint {
+                value_up: up_rate,
+                value_down: down_rate,
+            });
     }
 
     pub fn add_connection_rate_data(&mut self, connection_name: String, timestamp: i64, up_rate: u128, down_rate: u128) {
         
         let timestamp = DateTime::<Utc>::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(timestamp, 0).unwrap(), Utc);
-        
-        let data_point = DataPoint {
-            timestamp: timestamp,
-            value_up: up_rate,
-            value_down: down_rate,
-        };
+
 
         self.connection_rate_data
             .entry(connection_name)
-            .or_insert(Vec::new())
-            .push(data_point);
+            .or_insert(BTreeMap::new())
+            .insert(timestamp,DataPoint {
+                value_up: up_rate,
+                value_down: down_rate,
+            });
     }
 
     pub fn add_remote_address_rate_data(&mut self, remote_address_name: String, timestamp: i64, up_rate: u128, down_rate: u128) {
         
         let timestamp = DateTime::<Utc>::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(timestamp, 0).unwrap(), Utc);
-        
-        let data_point = DataPoint {
-            timestamp: timestamp,
-            value_up: up_rate,
-            value_down: down_rate,
-        };
 
         self.remote_address_rate_data
             .entry(remote_address_name)
-            .or_insert(Vec::new())
-            .push(data_point);
+            .or_insert(BTreeMap::new())
+            .insert(timestamp,DataPoint {
+                value_up: up_rate,
+                value_down: down_rate,
+            });
     }
 }
