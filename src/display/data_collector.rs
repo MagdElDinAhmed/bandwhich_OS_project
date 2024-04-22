@@ -1,13 +1,15 @@
+use core::time;
 use std::{collections::HashMap, fs::File};
 
 use std::fs::OpenOptions;
 
 use chrono::prelude::*;
+use trust_dns_resolver::proto::Time;
 
 struct DataPoint {
     timestamp: DateTime<Utc>,
-    value_up: f64,
-    value_down: f64,
+    value_up: u128,
+    value_down: u128,
 }
 
 pub struct DataCollector where{
@@ -34,8 +36,8 @@ impl DataCollector {
                     let record = result.unwrap();
                     let timestamp_read = record.get(0).unwrap().parse::<DateTime<Utc>>().unwrap();
                     let process_name = record.get(1).unwrap().to_string();
-                    let up_rate = record.get(2).unwrap().parse::<f64>().unwrap();
-                    let down_rate = record.get(3).unwrap().parse::<f64>().unwrap();
+                    let up_rate = record.get(2).unwrap().parse::<u128>().unwrap();
+                    let down_rate = record.get(3).unwrap().parse::<u128>().unwrap();
                     // Store the process name and rate in the process_rate_data HashMap
                     self.process_rate_data
                         .entry(process_name)
@@ -61,8 +63,8 @@ impl DataCollector {
                     let record = result.unwrap();
                     let timestamp_read = record.get(0).unwrap().parse::<DateTime<Utc>>().unwrap();
                     let connection_name = record.get(1).unwrap().to_string();
-                    let up_rate = record.get(6).unwrap().parse::<f64>().unwrap();
-                    let down_rate = record.get(7).unwrap().parse::<f64>().unwrap();
+                    let up_rate = record.get(6).unwrap().parse::<u128>().unwrap();
+                    let down_rate = record.get(7).unwrap().parse::<u128>().unwrap();
                     // Store the connection name and rate in the process_rate_data HashMap
                     self.connection_rate_data
                         .entry(connection_name)
@@ -87,8 +89,8 @@ impl DataCollector {
                     let record = result.unwrap();
                     let timestamp_read = record.get(0).unwrap().parse::<DateTime<Utc>>().unwrap();
                     let remote_address_name = record.get(1).unwrap().to_string();
-                    let up_rate = record.get(2).unwrap().parse::<f64>().unwrap();
-                    let down_rate = record.get(3).unwrap().parse::<f64>().unwrap();
+                    let up_rate = record.get(2).unwrap().parse::<u128>().unwrap();
+                    let down_rate = record.get(3).unwrap().parse::<u128>().unwrap();
                     // Store the process name and rate in the process_rate_data HashMap
                     self.remote_address_rate_data
                         .entry(remote_address_name)
@@ -102,5 +104,50 @@ impl DataCollector {
             } ,
             Err(_) => {},
         };
+    }
+
+    pub fn add_process_rate_data(&mut self, process_name: String, timestamp: i64, up_rate: u128, down_rate: u128) {
+        let timestamp_read = DateTime::<Utc>::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(timestamp, 0).unwrap(), Utc);
+        let data_point = DataPoint {
+            timestamp: timestamp_read,
+            value_up: up_rate,
+            value_down: down_rate,
+        };
+        self.process_rate_data
+            .entry(process_name)
+            .or_insert(Vec::new())
+            .push(data_point);
+    }
+
+    pub fn add_connection_rate_data(&mut self, connection_name: String, timestamp: i64, up_rate: u128, down_rate: u128) {
+        
+        let timestamp = DateTime::<Utc>::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(timestamp, 0).unwrap(), Utc);
+        
+        let data_point = DataPoint {
+            timestamp: timestamp,
+            value_up: up_rate,
+            value_down: down_rate,
+        };
+
+        self.connection_rate_data
+            .entry(connection_name)
+            .or_insert(Vec::new())
+            .push(data_point);
+    }
+
+    pub fn add_remote_address_rate_data(&mut self, remote_address_name: String, timestamp: i64, up_rate: u128, down_rate: u128) {
+        
+        let timestamp = DateTime::<Utc>::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(timestamp, 0).unwrap(), Utc);
+        
+        let data_point = DataPoint {
+            timestamp: timestamp,
+            value_up: up_rate,
+            value_down: down_rate,
+        };
+
+        self.remote_address_rate_data
+            .entry(remote_address_name)
+            .or_insert(Vec::new())
+            .push(data_point);
     }
 }

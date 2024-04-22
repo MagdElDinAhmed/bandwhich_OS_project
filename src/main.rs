@@ -91,6 +91,10 @@ where
 {
     // init refresh_rate
     let refresh_rate = Duration::from_millis(opts.refresh_rate);
+    let mut data_collector = DataCollector::new();
+    data_collector.open_process_rate_file();
+    data_collector.open_connection_rate_file();
+    data_collector.open_remote_address_rate_file();
 
     let running = Arc::new(AtomicBool::new(true));
     let paused = Arc::new(AtomicBool::new(false));
@@ -159,9 +163,9 @@ where
                             ui.output_text(&mut write_to_stdout);
                         } else {
                             ui.draw(paused, dns_shown, elapsed_time, ui_offset);
-                            ui.output_process_data_to_file("process_record.csv");
-                            ui.output_connections_data_to_file("connection_record.csv");
-                            ui.output_remote_addresses_data_to_file("remote_addresses_record.csv");
+                            ui.output_process_data_to_file("process_record.csv",&mut data_collector);
+                            ui.output_connections_data_to_file("connection_record.csv", &mut data_collector);
+                            ui.output_remote_addresses_data_to_file("remote_addresses_record.csv", &mut data_collector);
                             ui.output_process_total_data_to_file("process_total_record.csv");
                             ui.output_connections_total_data_to_file("connection_total_record.csv");
                             ui.output_remote_addresses_total_data_to_file("remote_addresses_total_record.csv");

@@ -16,6 +16,8 @@ use crate::{
     os::ProcessInfo,
 };
 
+use super::{data_collector, DataCollector};
+
 pub struct Ui<B>
 where
     B: Backend,
@@ -58,13 +60,13 @@ where
         }
     }
     //this function is used to output the process data to a file
-    pub fn output_process_data_to_file(&mut self, file_path: &str) {
+    pub fn output_process_data_to_file(&mut self, file_path: &str, data_collector: &mut DataCollector) {
         let state = &self.state;
         let local_time: DateTime<Local> = Local::now();
         let timestamp = local_time.timestamp();
         let mut no_traffic = true;
 
-        let output_process_data = |file: &mut std::fs::File, no_traffic: &mut bool| {
+        let mut output_process_data = |file: &mut std::fs::File, no_traffic: &mut bool| {
             let is_file_empty = file.metadata().map(|metadata| metadata.len() == 0).unwrap_or(false);
             if is_file_empty {
                 writeln!(
@@ -86,6 +88,7 @@ where
                 )
                 .expect("Unable to write to file");
                 *no_traffic = false;
+                data_collector.add_process_rate_data(proc_info.name.clone(), timestamp, process_network_data.total_bytes_uploaded, process_network_data.total_bytes_downloaded);
             }
         };
 
@@ -100,14 +103,14 @@ where
     }
 
     //this function is used to output the connection data to a file
-    pub fn output_connections_data_to_file(&mut self, file_path: &str) {
+    pub fn output_connections_data_to_file(&mut self, file_path: &str, data_collector: &mut DataCollector) {
         let state = &self.state;
         let ip_to_host = &self.ip_to_host;
         let local_time: DateTime<Local> = Local::now();
         let timestamp = local_time.timestamp();
         let mut no_traffic = true;
 
-        let output_connections_data =
+        let mut output_connections_data =
             |file: &mut std::fs::File, no_traffic: &mut bool| {
                 let is_file_empty = file.metadata().map(|metadata| metadata.len() == 0).unwrap_or(false);
                 if is_file_empty {
@@ -132,6 +135,10 @@ where
                         connection_network_data.process_name
                     ).expect("Unable to write to file");
                     *no_traffic = false;
+                    
+                    let connection_name = connection_network_data.interface_name.clone();
+
+                    data_collector.add_connection_rate_data(connection_name,timestamp, connection_network_data.total_bytes_uploaded, connection_network_data.total_bytes_downloaded);
                 }
             };
 
@@ -146,14 +153,14 @@ where
     }
 
     //this function is used to output the remote address data to a file
-    pub fn output_remote_addresses_data_to_file(&mut self, file_path: &str) {
+    pub fn output_remote_addresses_data_to_file(&mut self, file_path: &str, data_collector: &mut DataCollector) {
         let state = &self.state;
         let ip_to_host = &self.ip_to_host;
         let local_time: DateTime<Local> = Local::now();
         let timestamp = local_time.timestamp();
         let mut no_traffic = true;
 
-        let output_adressess_data = |file: &mut std::fs::File, no_traffic: &mut bool| {
+        let mut output_adressess_data = |file: &mut std::fs::File, no_traffic: &mut bool| {
             let is_file_empty = file.metadata().map(|metadata| metadata.len() == 0).unwrap_or(false);
             if is_file_empty {
                 writeln!(
@@ -173,6 +180,7 @@ where
                     remote_address_network_data.connection_count
                 ).expect("Unable to write to file");
                 *no_traffic = false;
+                data_collector.add_remote_address_rate_data(display_ip_or_host(*remote_address, ip_to_host), timestamp, remote_address_network_data.total_bytes_uploaded, remote_address_network_data.total_bytes_downloaded);
             }
         };
 
