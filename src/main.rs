@@ -15,7 +15,7 @@ use std::{
         Arc, Mutex, RwLock,
     },
     thread::{self, park_timeout},
-    time::{Duration, Instant, SystemTime},
+    time::{Duration, Instant},
 };
 
 use chrono::Utc;
@@ -24,7 +24,7 @@ use crossterm::{
     event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     terminal,
 };
-use display::{elapsed_time, RawTerminalBackend, Ui, DataCollector};
+use display::{elapsed_time, RawTerminalBackend, Ui};
 use network::{
     dns::{self, IpTable},
     LocalSocket, Sniffer, Utilization,
@@ -92,13 +92,7 @@ where
 {
     // init refresh_rate
     let refresh_rate = Duration::from_millis(opts.refresh_rate);
-    let mut data_collector = DataCollector::new();
-    data_collector.open_process_rate_file();
-    data_collector.open_connection_rate_file();
-    data_collector.open_remote_address_rate_file();
-    data_collector.open_process_total_file();
-    data_collector.open_connection_total_file();
-    data_collector.open_remote_address_total_file();
+    
 
     let running = Arc::new(AtomicBool::new(true));
     let paused = Arc::new(AtomicBool::new(false));
@@ -167,19 +161,19 @@ where
                             ui.output_text(&mut write_to_stdout);
                         } else {
                             ui.draw(paused, dns_shown, elapsed_time, ui_offset);
-                            ui.output_process_data_to_file("process_record.csv",&mut data_collector);
-                            ui.output_connections_data_to_file("connection_record.csv", &mut data_collector);
-                            ui.output_remote_addresses_data_to_file("remote_addresses_record.csv", &mut data_collector);
-                            ui.output_process_total_data_to_file("process_total_record.csv", &mut data_collector);
-                            ui.output_connections_total_data_to_file("connection_total_record.csv", &mut data_collector);
-                            ui.output_remote_addresses_total_data_to_file("remote_addresses_total_record.csv", &mut data_collector);
-                            let one_month_ago = Utc::now() - Duration::from_secs(60 * 60 * 24 * 30);
-                            data_collector.save_process_rate_data(one_month_ago);
-                            data_collector.save_connection_rate_data(one_month_ago);
-                            data_collector.save_remote_address_rate_data(one_month_ago);
-                            data_collector.save_process_total_data(one_month_ago);
-                            data_collector.save_connection_total_data(one_month_ago);
-                            data_collector.save_remote_address_total_data(one_month_ago);
+                            ui.output_process_data_to_file("process_record.csv");
+                            ui.output_connections_data_to_file("connection_record.csv");
+                            ui.output_remote_addresses_data_to_file("remote_addresses_record.csv");
+                            ui.output_process_total_data_to_file("process_total_record.csv");
+                            ui.output_connections_total_data_to_file("connection_total_record.csv");
+                            ui.output_remote_addresses_total_data_to_file("remote_addresses_total_record.csv");
+                            let one_month_ago = Utc::now() - Duration::from_secs(60 * 60 * 24 * 90);
+                            ui.data_collector.save_process_rate_data(one_month_ago);
+                            //ui.data_collector.save_connection_rate_data(one_month_ago);
+                            //ui.data_collector.save_remote_address_rate_data(one_month_ago);
+                            //ui.data_collector.save_process_total_data(one_month_ago);
+                            //ui.data_collector.save_connection_total_data(one_month_ago);
+                            //ui.data_collector.save_remote_address_total_data(one_month_ago);
                         }
                     }
                     let render_duration = render_start_time.elapsed();

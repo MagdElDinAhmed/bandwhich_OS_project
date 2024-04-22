@@ -1,12 +1,12 @@
-use core::time;
+
 use std::{collections::HashMap, collections::BTreeMap, fs::File};
 
-use std::fs::OpenOptions;
+
 
 use chrono::prelude::*;
-use trust_dns_resolver::proto::Time;
 
-struct DataPoint {
+
+pub struct DataPoint {
     value_up: u128,
     value_down: u128,
 }
@@ -34,85 +34,101 @@ impl DataCollector {
             remote_address_total_data: HashMap::new(),
             process_total_data_from_file: HashMap::new(),
             connection_total_data_from_file: HashMap::new(),
-            remote_address_total_data_from_file: HashMap::new(),
+            remote_address_total_data_from_file: HashMap::new()
         }
+    }
+
+    pub fn open_files(&mut self) {
+        self.open_process_rate_file();
+        //self.open_connection_rate_file();
+        //self.open_remote_address_rate_file();
+        //self.open_process_total_file();
+        //self.open_connection_total_file();
+        //self.open_remote_address_total_file();
     }
 
     pub fn open_process_rate_file(&mut self) {
         let file_path = "process_record.csv";
-        match File::open(file_path) {
-            Ok(file) => {
-                let mut reader = csv::Reader::from_reader(file);
-                for result in reader.records() {
-                    let record = result.unwrap();
-                    let timestamp_read = record.get(0).unwrap().parse::<DateTime<Utc>>().unwrap();
-                    let process_name = record.get(1).unwrap().to_string();
-                    let up_rate = record.get(2).unwrap().parse::<u128>().unwrap();
-                    let down_rate = record.get(3).unwrap().parse::<u128>().unwrap();
-                    // Store the process name and rate in the process_rate_data HashMap
-                    self.process_rate_data
-                        .entry(process_name)
-                        .or_insert(BTreeMap::new())
-                        .insert(timestamp_read, DataPoint {
-                            value_up: up_rate,
-                            value_down: down_rate,
-                        });
-                };
-            } ,
-            Err(_) => {},
-        };
-
+        if let Ok(file) = File::open(file_path) {
+            let mut reader = csv::Reader::from_reader(file);
+            let records = reader.records();
+            for result in records {
+                if let Ok(record) = result {
+                    let record_start = record.get(0).unwrap().chars().next();
+                    if let Some(first_char) = record_start {
+                        if first_char.is_numeric() {
+                            let timestamp_read = record.get(0).unwrap().parse::<DateTime<Utc>>().unwrap();
+                            let process_name = record.get(1).unwrap().to_string();
+                            let up_rate = record.get(2).unwrap().parse::<u128>().unwrap();
+                            let down_rate = record.get(3).unwrap().parse::<u128>().unwrap();
+                            // Store the process name and rate in the process_rate_data HashMap
+                            self.process_rate_data
+                                .entry(process_name)
+                                .or_insert(BTreeMap::new())
+                                .insert(timestamp_read, DataPoint {
+                                    value_up: up_rate,
+                                    value_down: down_rate,
+                                });
+                        }
+                    }
+                    else {
+                        continue;
+                    }
+                    
+                } else {
+                    eprintln!("Error reading record: {:?}", result.err());
+                }
+            }
+        } else {
+            eprintln!("Error opening file: {}", file_path);
+        }
     }
 
     pub fn open_connection_rate_file(&mut self) {
         let file_path = "connection_record.csv";
-        match File::open(file_path) {
-            Ok(file) => {
-                let mut reader = csv::Reader::from_reader(file);
-                for result in reader.records() {
-                    let record = result.unwrap();
-                    let timestamp_read = record.get(0).unwrap().parse::<DateTime<Utc>>().unwrap();
-                    let connection_name = record.get(1).unwrap().to_string();
-                    let up_rate = record.get(6).unwrap().parse::<u128>().unwrap();
-                    let down_rate = record.get(7).unwrap().parse::<u128>().unwrap();
-                    // Store the connection name and rate in the process_rate_data HashMap
-                    self.connection_rate_data
-                        .entry(connection_name)
-                        .or_insert(BTreeMap::new())
-                        .insert(timestamp_read,DataPoint {
-                            value_up: up_rate,
-                            value_down: down_rate,
-                        });
-                };
-            } ,
-            Err(_) => {},
-        };
+        if let Ok(file) = File::open(file_path) {
+            let mut reader = csv::Reader::from_reader(file);
+            for result in reader.records() {
+                let record = result.unwrap();
+                let timestamp_read = record.get(0).unwrap().parse::<DateTime<Utc>>().unwrap();
+                let connection_name = record.get(1).unwrap().to_string();
+                let up_rate = record.get(6).unwrap().parse::<u128>().unwrap();
+                let down_rate = record.get(7).unwrap().parse::<u128>().unwrap();
+                // Store the connection name and rate in the process_rate_data HashMap
+                self.connection_rate_data
+                    .entry(connection_name)
+                    .or_insert(BTreeMap::new())
+                    .insert(timestamp_read, DataPoint {
+                        value_up: up_rate,
+                        value_down: down_rate,
+                    });
+            }
+        }
     }
 
     pub fn open_remote_address_rate_file(&mut self) {
         let file_path = "remote_addresses_record.csv";
-        match File::open(file_path) {
-            Ok(file) => {
-                let mut reader = csv::Reader::from_reader(file);
-                for result in reader.records() {
-                    let record = result.unwrap();
-                    let timestamp_read = record.get(0).unwrap().parse::<DateTime<Utc>>().unwrap();
-                    let remote_address_name = record.get(1).unwrap().to_string();
-                    let up_rate = record.get(2).unwrap().parse::<u128>().unwrap();
-                    let down_rate = record.get(3).unwrap().parse::<u128>().unwrap();
-                    // Store the process name and rate in the process_rate_data HashMap
-                    self.remote_address_rate_data
-                        .entry(remote_address_name)
-                        .or_insert(BTreeMap::new())
-                        .insert(timestamp_read,DataPoint {
-                            value_up: up_rate,
-                            value_down: down_rate,
-                        });
-                };
-            } ,
-            Err(_) => {},
-        };
+        if let Ok(file) = File::open(file_path) {
+            let mut reader = csv::Reader::from_reader(file);
+            for result in reader.records() {
+                let record = result.unwrap();
+                let timestamp_read = record.get(0).unwrap().parse::<DateTime<Utc>>().unwrap();
+                let remote_address_name = record.get(1).unwrap().to_string();
+                let up_rate = record.get(2).unwrap().parse::<u128>().unwrap();
+                let down_rate = record.get(3).unwrap().parse::<u128>().unwrap();
+                // Store the process name and rate in the process_rate_data HashMap
+                self.remote_address_rate_data
+                    .entry(remote_address_name)
+                    .or_insert(BTreeMap::new())
+                    .insert(timestamp_read, DataPoint {
+                        value_up: up_rate,
+                        value_down: down_rate,
+                    });
+            }
+        }
     }
+
+    
 
     pub fn open_process_total_file(&mut self) {
         let file_path = "process_total_record.csv";
@@ -561,7 +577,7 @@ impl DataCollector {
     pub fn save_remote_address_total_data(&self, start_datetime: DateTime<Utc>) {
         let file_path = "remote_address_total_data_collected.csv";
         let mut writer = csv::Writer::from_path(file_path).unwrap();
-        for (remote_address_name, data) in &self.remote_address_total_data {
+        for (remote_address_name,_) in &self.remote_address_total_data {
             let subset = self.get_remote_address_total_subset(remote_address_name, start_datetime);
             for (timestamp, value) in subset {
                 writer.write_record(&[
