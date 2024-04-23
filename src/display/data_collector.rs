@@ -1,15 +1,15 @@
 
-use std::{collections::HashMap, collections::BTreeMap, fs::File};
+use std::{collections::{BTreeMap, HashMap}, fs::File, io::BufReader};
 
-
+use csv::{ReaderBuilder, StringRecord};
 
 use chrono::prelude::*;
-
 
 pub struct DataPoint {
     value_up: u128,
     value_down: u128,
 }
+
 
 pub struct DataCollector where{
     process_rate_data: HashMap<String, BTreeMap<DateTime<Utc>,DataPoint>>,
@@ -49,82 +49,89 @@ impl DataCollector {
 
     pub fn open_process_rate_file(&mut self) {
         let file_path = "process_record.csv";
-        if let Ok(file) = File::open(file_path) {
-            let mut reader = csv::Reader::from_reader(file);
-            let records = reader.records();
-            for result in records {
-                if let Ok(record) = result {
-                    let record_start = record.get(0).unwrap().chars().next();
-                    if let Some(first_char) = record_start {
-                        if first_char.is_numeric() {
-                            let timestamp_read = record.get(0).unwrap().parse::<DateTime<Utc>>().unwrap();
-                            let process_name = record.get(1).unwrap().to_string();
-                            let up_rate = record.get(2).unwrap().parse::<u128>().unwrap();
-                            let down_rate = record.get(3).unwrap().parse::<u128>().unwrap();
-                            // Store the process name and rate in the process_rate_data HashMap
-                            self.process_rate_data
-                                .entry(process_name)
-                                .or_insert(BTreeMap::new())
-                                .insert(timestamp_read, DataPoint {
-                                    value_up: up_rate,
-                                    value_down: down_rate,
-                                });
-                        }
-                    }
-                    else {
-                        continue;
-                    }
-                    
-                } else {
-                    eprintln!("Error reading record: {:?}", result.err());
-                }
-            }
-        } else {
-            eprintln!("Error opening file: {}", file_path);
+        let file = File::open(file_path).expect("Oh no");
+        
+        let mut reader = ReaderBuilder::new()
+        .has_headers(true)
+        .from_reader(BufReader::new(file));
+        for result in reader.records() {
+            
+            let record: StringRecord = result.expect("No, just no");
+            let temp_timestamp = record[0].trim().parse::<i64>().unwrap();
+            let timestamp_read = DateTime::<Utc>::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(temp_timestamp, 0).unwrap(), Utc);
+
+            
+            let process_name = record[1].to_string();
+            let up_rate = record[2].parse::<u128>().unwrap();
+            let down_rate = record[3].parse::<u128>().unwrap();
+            // Store the process name and rate in the process_rate_data HashMap
+            self.process_rate_data
+                .entry(process_name)
+                .or_insert(BTreeMap::new())
+                .insert(timestamp_read, DataPoint {
+                    value_up: up_rate,
+                    value_down: down_rate,
+                });
+            
         }
+        
     }
 
     pub fn open_connection_rate_file(&mut self) {
         let file_path = "connection_record.csv";
-        if let Ok(file) = File::open(file_path) {
-            let mut reader = csv::Reader::from_reader(file);
-            for result in reader.records() {
-                let record = result.unwrap();
-                let timestamp_read = record.get(0).unwrap().parse::<DateTime<Utc>>().unwrap();
-                let connection_name = record.get(1).unwrap().to_string();
-                let up_rate = record.get(6).unwrap().parse::<u128>().unwrap();
-                let down_rate = record.get(7).unwrap().parse::<u128>().unwrap();
-                // Store the connection name and rate in the process_rate_data HashMap
-                self.connection_rate_data
-                    .entry(connection_name)
-                    .or_insert(BTreeMap::new())
-                    .insert(timestamp_read, DataPoint {
-                        value_up: up_rate,
-                        value_down: down_rate,
-                    });
-            }
+        let file = File::open(file_path).expect("Oh no");
+        
+        let mut reader = ReaderBuilder::new()
+        .has_headers(true)
+        .from_reader(BufReader::new(file));
+        for result in reader.records() {
+            
+            let record: StringRecord = result.expect("No, just no");
+            let temp_timestamp = record[0].trim().parse::<i64>().unwrap();
+            let timestamp_read = DateTime::<Utc>::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(temp_timestamp, 0).unwrap(), Utc);
+
+            
+            let connection_name = record[1].to_string();
+            let up_rate = record[6].parse::<u128>().unwrap();
+            let down_rate = record[7].parse::<u128>().unwrap();
+            // Store the process name and rate in the process_rate_data HashMap
+            self.connection_rate_data
+                .entry(connection_name)
+                .or_insert(BTreeMap::new())
+                .insert(timestamp_read, DataPoint {
+                    value_up: up_rate,
+                    value_down: down_rate,
+                });
+            
         }
     }
 
     pub fn open_remote_address_rate_file(&mut self) {
         let file_path = "remote_addresses_record.csv";
-        if let Ok(file) = File::open(file_path) {
-            let mut reader = csv::Reader::from_reader(file);
-            for result in reader.records() {
-                let record = result.unwrap();
-                let timestamp_read = record.get(0).unwrap().parse::<DateTime<Utc>>().unwrap();
-                let remote_address_name = record.get(1).unwrap().to_string();
-                let up_rate = record.get(2).unwrap().parse::<u128>().unwrap();
-                let down_rate = record.get(3).unwrap().parse::<u128>().unwrap();
-                // Store the process name and rate in the process_rate_data HashMap
-                self.remote_address_rate_data
-                    .entry(remote_address_name)
-                    .or_insert(BTreeMap::new())
-                    .insert(timestamp_read, DataPoint {
-                        value_up: up_rate,
-                        value_down: down_rate,
-                    });
-            }
+        let file = File::open(file_path).expect("Oh no");
+        
+        let mut reader = ReaderBuilder::new()
+        .has_headers(true)
+        .from_reader(BufReader::new(file));
+        for result in reader.records() {
+            
+            let record: StringRecord = result.expect("No, just no");
+            let temp_timestamp = record[0].trim().parse::<i64>().unwrap();
+            let timestamp_read = DateTime::<Utc>::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(temp_timestamp, 0).unwrap(), Utc);
+
+            
+            let remote_address_name = record[1].to_string();
+            let up_rate = record[2].parse::<u128>().unwrap();
+            let down_rate = record[3].parse::<u128>().unwrap();
+            // Store the process name and rate in the process_rate_data HashMap
+            self.remote_address_rate_data
+                .entry(remote_address_name)
+                .or_insert(BTreeMap::new())
+                .insert(timestamp_read, DataPoint {
+                    value_up: up_rate,
+                    value_down: down_rate,
+                });
+            
         }
     }
 
@@ -137,42 +144,49 @@ impl DataCollector {
         let mut last_value_down = 0;
         let mut last_run_total_up = 0;
         let mut last_run_total_down = 0;
-        match File::open(file_path) {
-            Ok(file) => {
-                let mut reader = csv::Reader::from_reader(file);
-                for result in reader.records() {
-                    let record = result.unwrap();
-                    let timestamp_read = record.get(0).unwrap().parse::<DateTime<Utc>>().unwrap();
-                    let process_name = record.get(1).unwrap().to_string();
-                    let up_total = record.get(2).unwrap().parse::<u128>().unwrap();
-                    let down_total = record.get(3).unwrap().parse::<u128>().unwrap();
-                    
-                    if (last_value_up >= up_total) || (last_value_down >= down_total) {
-                        last_run_total_up = last_value_up;
-                        last_run_total_down = last_value_down;
-                    }
 
-                    let process_name2 = process_name.clone();
-                    
-                    // Store the process name and rate in the process_rate_data HashMap
-                    self.process_total_data
-                        .entry(process_name)
-                        .or_insert(BTreeMap::new())
-                        .insert(timestamp_read,DataPoint {
-                            value_up: up_total + last_run_total_up,
-                            value_down: down_total + last_run_total_down,
-                        });
-                    
-                    last_value_up = up_total;
-                    last_value_down = down_total;
-                    self.process_total_data_from_file.insert(process_name2, DataPoint {
-                        value_up: up_total,
-                        value_down: down_total,
-                    });
-                };
-            } ,
-            Err(_) => {},
-        };
+        let file = File::open(file_path).expect("Oh no");
+        
+        let mut reader = ReaderBuilder::new()
+        .has_headers(true)
+        .from_reader(BufReader::new(file));
+        for result in reader.records() {
+            
+            let record: StringRecord = result.expect("No, just no");
+            let temp_timestamp = record[0].trim().parse::<i64>().unwrap();
+            let timestamp_read = DateTime::<Utc>::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(temp_timestamp, 0).unwrap(), Utc);
+
+            
+            let process_name = record[1].to_string();
+            let up_total = record[2].parse::<u128>().unwrap();
+            let down_total = record[3].parse::<u128>().unwrap();
+            // Store the process name and rate in the process_rate_data HashMap
+            if (last_value_up >= up_total) || (last_value_down >= down_total) {
+                last_run_total_up = last_value_up;
+                last_run_total_down = last_value_down;
+            }
+
+            let process_name2 = process_name.clone();
+            
+            // Store the process name and rate in the process_rate_data HashMap
+            self.process_total_data
+                .entry(process_name)
+                .or_insert(BTreeMap::new())
+                .insert(timestamp_read,DataPoint {
+                    value_up: up_total + last_run_total_up,
+                    value_down: down_total + last_run_total_down,
+                });
+            
+            last_value_up = up_total;
+            last_value_down = down_total;
+            self.process_total_data_from_file.insert(process_name2, DataPoint {
+                value_up: up_total,
+                value_down: down_total,
+            });
+            
+        }
+
+        
         
     }
 
@@ -183,42 +197,46 @@ impl DataCollector {
         let mut last_value_down = 0;
         let mut last_run_total_up = 0;
         let mut last_run_total_down = 0;
-        match File::open(file_path) {
-            Ok(file) => {
-                let mut reader = csv::Reader::from_reader(file);
-                for result in reader.records() {
-                    let record = result.unwrap();
-                    let timestamp_read = record.get(0).unwrap().parse::<DateTime<Utc>>().unwrap();
-                    let connection_name = record.get(1).unwrap().to_string();
-                    let up_total = record.get(6).unwrap().parse::<u128>().unwrap();
-                    let down_total = record.get(7).unwrap().parse::<u128>().unwrap();
-                    
-                    if (last_value_up >= up_total) || (last_value_down >= down_total) {
-                        last_run_total_up = last_value_up;
-                        last_run_total_down = last_value_down;
-                    }
-                    
-                    let connection_name2 = connection_name.clone();
-                    // Store the process name and rate in the process_rate_data HashMap
-                    self.connection_rate_data
-                        .entry(connection_name)
-                        .or_insert(BTreeMap::new())
-                        .insert(timestamp_read,DataPoint {
-                            value_up: up_total + last_run_total_up,
-                            value_down: down_total + last_run_total_down,
-                        });
-                    
-                    last_value_up = up_total;
-                    last_value_down = down_total;
 
-                    self.connection_total_data_from_file.insert(connection_name2, DataPoint {
-                        value_up: up_total,
-                        value_down: down_total,
-                    });
-                };
-            } ,
-            Err(_) => {},
-        };
+        let file = File::open(file_path).expect("Oh no");
+        
+        let mut reader = ReaderBuilder::new()
+        .has_headers(true)
+        .from_reader(BufReader::new(file));
+        for result in reader.records() {
+            
+            let record: StringRecord = result.expect("No, just no");
+            let temp_timestamp = record[0].trim().parse::<i64>().unwrap();
+            let timestamp_read = DateTime::<Utc>::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(temp_timestamp, 0).unwrap(), Utc);
+
+            
+            let connection_name = record[1].to_string();
+            let up_total = record[6].parse::<u128>().unwrap();
+            let down_total = record[7].parse::<u128>().unwrap();
+            // Store the process name and rate in the process_rate_data HashMap
+            if (last_value_up >= up_total) || (last_value_down >= down_total) {
+                last_run_total_up = last_value_up;
+                last_run_total_down = last_value_down;
+            }
+            
+            // Store the process name and rate in the process_rate_data HashMap
+            let connection_name2 = connection_name.clone();
+                    // Store the process name and rate in the process_rate_data HashMap
+            self.connection_total_data
+                .entry(connection_name)
+                .or_insert(BTreeMap::new())
+                .insert(timestamp_read,DataPoint {
+                    value_up: up_total + last_run_total_up,
+                    value_down: down_total + last_run_total_down,
+                });
+            
+            last_value_up = up_total;
+            last_value_down = down_total;
+            self.connection_total_data_from_file.insert(connection_name2, DataPoint {
+                value_up: up_total,
+                value_down: down_total,
+            });
+        }
     }
 
     pub fn open_remote_address_total_file(&mut self) {
@@ -228,42 +246,47 @@ impl DataCollector {
         let mut last_value_down = 0;
         let mut last_run_total_up = 0;
         let mut last_run_total_down = 0;
-        match File::open(file_path) {
-            Ok(file) => {
-                let mut reader = csv::Reader::from_reader(file);
-                for result in reader.records() {
-                    let record = result.unwrap();
-                    let timestamp_read = record.get(0).unwrap().parse::<DateTime<Utc>>().unwrap();
-                    let remote_address_name = record.get(1).unwrap().to_string();
-                    let up_total = record.get(2).unwrap().parse::<u128>().unwrap();
-                    let down_total = record.get(3).unwrap().parse::<u128>().unwrap();
-                    
-                    if (last_value_up >= up_total) || (last_value_down >= down_total) {
-                        last_run_total_up = last_value_up;
-                        last_run_total_down = last_value_down;
-                    }
-                    
-                    let remote_address_name2 = remote_address_name.clone();
-                    // Store the process name and rate in the process_rate_data HashMap
-                    self.remote_address_rate_data
-                        .entry(remote_address_name)
-                        .or_insert(BTreeMap::new())
-                        .insert(timestamp_read,DataPoint {
-                            value_up: up_total + last_run_total_up,
-                            value_down: down_total + last_run_total_down,
-                        });
-                    
-                    last_value_up = up_total;
-                    last_value_down = down_total;
 
-                    self.remote_address_total_data_from_file.insert(remote_address_name2, DataPoint {
-                        value_up: up_total,
-                        value_down: down_total,
-                    });
-                };
-            } ,
-            Err(_) => {},
-        };
+        let file = File::open(file_path).expect("Oh no");
+        
+        let mut reader = ReaderBuilder::new()
+        .has_headers(true)
+        .from_reader(BufReader::new(file));
+        for result in reader.records() {
+            
+            let record: StringRecord = result.expect("No, just no");
+            let temp_timestamp = record[0].trim().parse::<i64>().unwrap();
+            let timestamp_read = DateTime::<Utc>::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(temp_timestamp, 0).unwrap(), Utc);
+
+            
+            let remote_address_name = record[1].to_string();
+            let up_total = record[2].parse::<u128>().unwrap();
+            let down_total = record[3].parse::<u128>().unwrap();
+            // Store the process name and rate in the process_rate_data HashMap
+            if (last_value_up >= up_total) || (last_value_down >= down_total) {
+                last_run_total_up = last_value_up;
+                last_run_total_down = last_value_down;
+            }
+
+            let remote_address_name2 = remote_address_name.clone();
+            
+            // Store the process name and rate in the process_rate_data HashMap
+            self.remote_address_total_data
+                .entry(remote_address_name)
+                .or_insert(BTreeMap::new())
+                .insert(timestamp_read,DataPoint {
+                    value_up: up_total + last_run_total_up,
+                    value_down: down_total + last_run_total_down,
+                });
+            
+            last_value_up = up_total;
+            last_value_down = down_total;
+            self.remote_address_total_data_from_file.insert(remote_address_name2, DataPoint {
+                value_up: up_total,
+                value_down: down_total,
+            });
+            
+        }
     }
 
     pub fn add_process_rate_data(&mut self, process_name: String, timestamp: i64, up_rate: u128, down_rate: u128) {
