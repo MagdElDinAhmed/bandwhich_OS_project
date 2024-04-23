@@ -208,44 +208,46 @@ impl DataCollector {
         let mut last_run_total_up = 0;
         let mut last_run_total_down = 0;
 
-        let file = File::open(file_path).expect("Oh no");
-        
-        let mut reader = ReaderBuilder::new()
-        .has_headers(true)
-        .from_reader(BufReader::new(file));
-        for result in reader.records() {
+        if Path::new(file_path).exists() {
+            let file = File::open(file_path).expect("Oh no");
             
-            let record: StringRecord = result.expect("No, just no");
-            let temp_timestamp = record[0].trim().parse::<i64>().unwrap();
-            let timestamp_read = DateTime::<Utc>::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(temp_timestamp, 0).unwrap(), Utc);
+            let mut reader = ReaderBuilder::new()
+            .has_headers(true)
+            .from_reader(BufReader::new(file));
+            for result in reader.records() {
+                
+                let record: StringRecord = result.expect("No, just no");
+                let temp_timestamp = record[0].trim().parse::<i64>().unwrap();
+                let timestamp_read = DateTime::<Utc>::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(temp_timestamp, 0).unwrap(), Utc);
 
-            
-            let connection_name = record[1].to_string();
-            let up_total = record[6].parse::<u128>().unwrap();
-            let down_total = record[7].parse::<u128>().unwrap();
-            // Store the process name and rate in the process_rate_data HashMap
-            if (last_value_up >= up_total) || (last_value_down >= down_total) {
-                last_run_total_up = last_value_up;
-                last_run_total_down = last_value_down;
-            }
-            
-            // Store the process name and rate in the process_rate_data HashMap
-            let connection_name2 = connection_name.clone();
-                    // Store the process name and rate in the process_rate_data HashMap
-            self.connection_total_data
-                .entry(connection_name)
-                .or_insert(BTreeMap::new())
-                .insert(timestamp_read,DataPoint {
-                    value_up: up_total + last_run_total_up,
-                    value_down: down_total + last_run_total_down,
+                
+                let connection_name = record[1].to_string();
+                let up_total = record[6].parse::<u128>().unwrap();
+                let down_total = record[7].parse::<u128>().unwrap();
+                // Store the process name and rate in the process_rate_data HashMap
+                if (last_value_up >= up_total) || (last_value_down >= down_total) {
+                    last_run_total_up = last_value_up;
+                    last_run_total_down = last_value_down;
+                }
+                
+                // Store the process name and rate in the process_rate_data HashMap
+                let connection_name2 = connection_name.clone();
+                        // Store the process name and rate in the process_rate_data HashMap
+                self.connection_total_data
+                    .entry(connection_name)
+                    .or_insert(BTreeMap::new())
+                    .insert(timestamp_read,DataPoint {
+                        value_up: up_total + last_run_total_up,
+                        value_down: down_total + last_run_total_down,
+                    });
+                
+                last_value_up = up_total;
+                last_value_down = down_total;
+                self.connection_total_data_from_file.insert(connection_name2, DataPoint {
+                    value_up: up_total,
+                    value_down: down_total,
                 });
-            
-            last_value_up = up_total;
-            last_value_down = down_total;
-            self.connection_total_data_from_file.insert(connection_name2, DataPoint {
-                value_up: up_total,
-                value_down: down_total,
-            });
+            }
         }
     }
 
