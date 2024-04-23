@@ -2,6 +2,7 @@
 use std::{collections::{BTreeMap, HashMap}, fs::File, io::BufReader};
 
 use csv::{ReaderBuilder, StringRecord};
+use std::path::Path;
 
 use chrono::prelude::*;
 
@@ -49,32 +50,35 @@ impl DataCollector {
 
     pub fn open_process_rate_file(&mut self) {
         let file_path = "process_record.csv";
-        let file = File::open(file_path).expect("Oh no");
-        
-        let mut reader = ReaderBuilder::new()
-        .has_headers(true)
-        .from_reader(BufReader::new(file));
-        for result in reader.records() {
+        if Path::new(file_path).exists() {
             
-            let record: StringRecord = result.expect("No, just no");
-            let temp_timestamp = record[0].trim().parse::<i64>().unwrap();
-            let timestamp_read = DateTime::<Utc>::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(temp_timestamp, 0).unwrap(), Utc);
+        
+            let file = File::open(file_path).expect("Oh no");
+            
+            let mut reader = ReaderBuilder::new()
+            .has_headers(true)
+            .from_reader(BufReader::new(file));
+            for result in reader.records() {
+                
+                let record: StringRecord = result.expect("No, just no");
+                let temp_timestamp = record[0].trim().parse::<i64>().unwrap();
+                let timestamp_read = DateTime::<Utc>::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(temp_timestamp, 0).unwrap(), Utc);
 
-            
-            let process_name = record[1].to_string();
-            let up_rate = record[2].parse::<u128>().unwrap();
-            let down_rate = record[3].parse::<u128>().unwrap();
-            // Store the process name and rate in the process_rate_data HashMap
-            self.process_rate_data
-                .entry(process_name)
-                .or_insert(BTreeMap::new())
-                .insert(timestamp_read, DataPoint {
-                    value_up: up_rate,
-                    value_down: down_rate,
-                });
-            
+                
+                let process_name = record[1].to_string();
+                let up_rate = record[2].parse::<u128>().unwrap();
+                let down_rate = record[3].parse::<u128>().unwrap();
+                // Store the process name and rate in the process_rate_data HashMap
+                self.process_rate_data
+                    .entry(process_name)
+                    .or_insert(BTreeMap::new())
+                    .insert(timestamp_read, DataPoint {
+                        value_up: up_rate,
+                        value_down: down_rate,
+                    });
+                
+            }
         }
-        
     }
 
     pub fn open_connection_rate_file(&mut self) {
