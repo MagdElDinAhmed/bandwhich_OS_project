@@ -38,7 +38,102 @@ use crate::os::ProcessInfo;
 
 //const DISPLAY_DELTA: Duration = Duration::from_millis(1000);
 
+use std::process::Command;
+// use std::net::ToSocketAddrs;
+
+fn set_egress_bandwidth_limit(interface: &str, limit_mbps: usize) -> Result<(), std::io::Error> {
+    let command = format!(
+        "tc qdisc replace dev {} root handle 1: tbf rate {}mbit burst 32kbit latency 400ms",
+        interface, limit_mbps
+    );
+    let output = Command::new("sh")
+        .arg("-c")
+        .arg(command)
+        .output()?;
+
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Failed to set egress bandwidth limit"
+        ))
+    }
+}
+
+fn set_ingress_bandwidth_limit(interface: &str, limit_mbps: usize) -> Result<(), std::io::Error> {
+    let setup_ifb = Command::new("sh")
+        .arg("-c")
+        .arg("modprobe ifb; ip link add ifb0 type ifb; ip link set dev ifb0 up")
+        .output()?;
+    
+    if !setup_ifb.status.success() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Failed to setup ifb device"
+        ));
+    }
+
+    let redirect_ingress = Command::new("sh")
+        .arg("-c")
+        .arg(format!(
+            "tc qdisc replace dev {} ingress; tc filter replace dev {} parent ffff: protocol ip u32 match u32 0 0 action mirred egress redirect dev ifb0",
+            interface, interface
+        ))
+        .output()?;
+    
+    if !redirect_ingress.status.success() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Failed to redirect ingress traffic"
+        ));
+    }
+
+    let limit_ifb = Command::new("sh")
+        .arg("-c")
+        .arg(format!(
+            "tc qdisc replace dev ifb0 root tbf rate {}mbit burst 100kbit latency 400ms",
+            limit_mbps
+        ))
+        .output()?;
+    
+    if limit_ifb.status.success() {
+        Ok(())
+    } else {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Failed to set ingress bandwidth limit"
+        ))
+    }
+}
+
+
+
 fn main() -> anyhow::Result<()> {
+    println!("This should print immediately when the program runs.");
+
+    let upload_limit_mbps = 10;
+    let download_limit_mbps = 10;
+
+    // Retrieve all network interfaces
+    for iface in pnet::datalink::interfaces() {
+        if !iface.is_up() || iface.ips.is_empty() {
+            continue; // Skip interfaces that are down or have no IP
+        }
+
+        println!("Applying limits to interface: {}", iface.name);
+        match set_egress_bandwidth_limit(&iface.name, upload_limit_mbps) {
+            Ok(_) => println!("Upload limit set successfully for {}", iface.name),
+            Err(e) => eprintln!("Failed to set upload limit for {}: {}", iface.name, e),
+        }
+
+        match set_ingress_bandwidth_limit(&iface.name, download_limit_mbps) {
+            Ok(_) => println!("Download limit set successfully for {}", iface.name),
+            Err(e) => eprintln!("Failed to set download limit for {}: {}", iface.name, e),
+        }
+    }
+
+
     let opts = Opt::parse();
 
     // init logging
