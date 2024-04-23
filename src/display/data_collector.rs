@@ -172,8 +172,8 @@ impl DataCollector {
                 let down_total = record[3].parse::<u128>().unwrap();
                 // Store the process name and rate in the process_rate_data HashMap
                 if (last_value_up >= up_total) || (last_value_down >= down_total) {
-                    last_run_total_up = last_value_up;
-                    last_run_total_down = last_value_down;
+                    last_run_total_up += last_value_up;
+                    last_run_total_down += last_value_down;
                 }
 
                 let process_name2 = process_name.clone();
@@ -190,8 +190,8 @@ impl DataCollector {
                 last_value_up = up_total;
                 last_value_down = down_total;
                 self.process_total_data_from_file.insert(process_name2, DataPoint {
-                    value_up: up_total,
-                    value_down: down_total,
+                    value_up: up_total + last_run_total_up,
+                    value_down: down_total + last_run_total_down,
                 });
                 
             }
@@ -226,8 +226,8 @@ impl DataCollector {
                 let down_total = record[7].parse::<u128>().unwrap();
                 // Store the process name and rate in the process_rate_data HashMap
                 if (last_value_up >= up_total) || (last_value_down >= down_total) {
-                    last_run_total_up = last_value_up;
-                    last_run_total_down = last_value_down;
+                    last_run_total_up += last_value_up;
+                    last_run_total_down += last_value_down;
                 }
                 
                 // Store the process name and rate in the process_rate_data HashMap
@@ -278,8 +278,8 @@ impl DataCollector {
                 let down_total = record[3].parse::<u128>().unwrap();
                 // Store the process name and rate in the process_rate_data HashMap
                 if (last_value_up >= up_total) || (last_value_down >= down_total) {
-                    last_run_total_up = last_value_up;
-                    last_run_total_down = last_value_down;
+                    last_run_total_up += last_value_up;
+                    last_run_total_down += last_value_down;
                 }
 
                 let remote_address_name2 = remote_address_name.clone();
@@ -296,8 +296,8 @@ impl DataCollector {
                 last_value_up = up_total;
                 last_value_down = down_total;
                 self.remote_address_total_data_from_file.insert(remote_address_name2, DataPoint {
-                    value_up: up_total,
-                    value_down: down_total,
+                    value_up: up_total + last_run_total_up,
+                    value_down: down_total + last_run_total_down,
                 });
                 
             }
