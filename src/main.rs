@@ -169,11 +169,11 @@ where
                             ui.output_remote_addresses_total_data_to_file("remote_addresses_total_record.csv");
                             let one_month_ago = Utc::now() - Duration::from_secs(60 * 60 * 24 * 90);
                             ui.data_collector.save_process_rate_data(one_month_ago);
-                            //ui.data_collector.save_connection_rate_data(one_month_ago);
-                            //ui.data_collector.save_remote_address_rate_data(one_month_ago);
-                            //ui.data_collector.save_process_total_data(one_month_ago);
-                            //ui.data_collector.save_connection_total_data(one_month_ago);
-                            //ui.data_collector.save_remote_address_total_data(one_month_ago);
+                            ui.data_collector.save_connection_rate_data(one_month_ago);
+                            ui.data_collector.save_remote_address_rate_data(one_month_ago);
+                            ui.data_collector.save_process_total_data(one_month_ago);
+                            ui.data_collector.save_connection_total_data(one_month_ago);
+                            ui.data_collector.save_remote_address_total_data(one_month_ago);
                         }
                     }
                     let render_duration = render_start_time.elapsed();

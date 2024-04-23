@@ -147,7 +147,7 @@ where
                     
                     let connection_name = connection_network_data.interface_name.clone();
 
-                    //self.data_collector.add_connection_rate_data(connection_name,timestamp, connection_network_data.total_bytes_uploaded, connection_network_data.total_bytes_downloaded);
+                    self.data_collector.add_connection_rate_data(connection_name,timestamp, connection_network_data.total_bytes_uploaded, connection_network_data.total_bytes_downloaded);
                 }
             };
 
@@ -189,7 +189,7 @@ where
                     remote_address_network_data.connection_count
                 ).expect("Unable to write to file");
                 *no_traffic = false;
-                //self.data_collector.add_remote_address_rate_data(display_ip_or_host(*remote_address, ip_to_host), timestamp, remote_address_network_data.total_bytes_uploaded, remote_address_network_data.total_bytes_downloaded);
+                self.data_collector.add_remote_address_rate_data(display_ip_or_host(*remote_address, ip_to_host), timestamp, remote_address_network_data.total_bytes_uploaded, remote_address_network_data.total_bytes_downloaded);
             }
         };
 
@@ -235,9 +235,9 @@ where
                 *no_traffic = false;
                 let process_total_file_upload = self.data_collector.get_process_total_file_upload(proc_info.name.clone());
                 let process_total_file_download = self.data_collector.get_process_total_file_download(proc_info.name.clone());
-                //self.data_collector.add_process_total_data(proc_info.name.clone(), timestamp,
-                 //process_network_data.total_bytes_uploaded + process_total_file_upload,
-                  //process_network_data.total_bytes_downloaded + process_total_file_download);
+                self.data_collector.add_process_total_data(proc_info.name.clone(), timestamp,
+                 process_network_data.total_bytes_uploaded + process_total_file_upload,
+                  process_network_data.total_bytes_downloaded + process_total_file_download);
             }
         };
 
@@ -287,9 +287,9 @@ where
 
                     let connection_total_file_upload = self.data_collector.get_connection_total_file_upload(connection_network_data.interface_name.clone());
                     let connection_total_file_download = self.data_collector.get_connection_total_file_download(connection_network_data.interface_name.clone());
-                    //self.data_collector.add_connection_total_data(connection_network_data.interface_name.clone(),timestamp,
-                     //connection_network_data.total_bytes_uploaded + connection_total_file_upload,
-                      //connection_network_data.total_bytes_downloaded + connection_total_file_download);
+                    self.data_collector.add_connection_total_data(connection_network_data.interface_name.clone(),timestamp,
+                     connection_network_data.total_bytes_uploaded + connection_total_file_upload,
+                      connection_network_data.total_bytes_downloaded + connection_total_file_download);
                 }
             };
 
@@ -335,9 +335,9 @@ where
                 let remote_address_file_upload_total = self.data_collector.get_remote_address_total_file_upload(display_ip_or_host(*remote_address, ip_to_host));
                 let remote_address_file_download_total = self.data_collector.get_remote_address_total_file_download(display_ip_or_host(*remote_address, ip_to_host));
 
-                //self.data_collector.add_remote_address_total_data(display_ip_or_host(*remote_address, ip_to_host), timestamp, 
-                //remote_address_network_data.total_bytes_uploaded + remote_address_file_upload_total,
-                 //remote_address_network_data.total_bytes_downloaded + remote_address_file_download_total);
+                self.data_collector.add_remote_address_total_data(display_ip_or_host(*remote_address, ip_to_host), timestamp, 
+                remote_address_network_data.total_bytes_uploaded + remote_address_file_upload_total,
+                 remote_address_network_data.total_bytes_downloaded + remote_address_file_download_total);
 
             }
         };

@@ -40,11 +40,11 @@ impl DataCollector {
 
     pub fn open_files(&mut self) {
         self.open_process_rate_file();
-        //self.open_connection_rate_file();
-        //self.open_remote_address_rate_file();
-        //self.open_process_total_file();
-        //self.open_connection_total_file();
-        //self.open_remote_address_total_file();
+        self.open_connection_rate_file();
+        self.open_remote_address_rate_file();
+        self.open_process_total_file();
+        self.open_connection_total_file();
+        self.open_remote_address_total_file();
     }
 
     pub fn open_process_rate_file(&mut self) {
