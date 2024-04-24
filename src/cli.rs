@@ -45,6 +45,14 @@ pub struct Opt {
     
     #[clap(long = "alert", default_value = "0")]
     pub alert: u64,
+
+    #[clap(long, default_value = "2000")]
+    /// Upload bandwidth limit in Mbps
+    pub upload_limit_mbps: usize,
+
+    #[clap(long, default_value = "2000")]
+    /// Download bandwidth limit in Mbps
+    pub download_limit_mbps: usize,
 }
 
 #[derive(Copy, Clone, Debug, Default, Args)]

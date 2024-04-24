@@ -23,7 +23,6 @@ fn top_app_and_bottom_split(rect: Rect) -> (Rect, Rect, Rect) {
         .split(rect);
     (parts[0], parts[1], parts[2])
 }
-ot
 pub struct Layout<'a> {
     pub header: HeaderDetails<'a>,
     pub children: Vec<Table>,
