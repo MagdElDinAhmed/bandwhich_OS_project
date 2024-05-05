@@ -69,13 +69,28 @@ fn gpl() -> Vec<String> {
 fn gpr(process: &str, time: &str) -> Vec<Vec<String>> {
     let mut v_temp = PROCESS_RATES.lock().unwrap();
     let mut v = Vec::new();
+    let mut start_time = Utc::now() - Duration::from_secs(60 * 60 * 24 * 30);
+
+    if (time == "Last Year")
+    {
+        start_time = Utc::now() - Duration::from_secs(60 * 60 * 24 * 365);
+    }
+    else if (time == "Last Week")
+    {
+        start_time = Utc::now() - Duration::from_secs(60 * 60 * 24 * 7);
+    }
+    else {
+        start_time = Utc.timestamp_opt(0, 0).unwrap();
+    }
     
 
     let mut subset = BTreeMap::new();
     match v_temp.get(process) {
         Some(data) => {
             for (timestamp, value) in data {
-                subset.insert(timestamp.clone(), value);
+                if timestamp >= &start_time {
+                    subset.insert(timestamp.clone(), value);
+                }
             }
         },
         None => {},
