@@ -665,6 +665,18 @@ impl DataCollector {
         self.remote_address_rate_data.clone()
     }
 
+    pub fn get_process_totals(&self) -> HashMap<String, BTreeMap<DateTime<Utc>, DataPoint>> {
+        self.process_total_data.clone()
+    }
+
+    pub fn get_connection_totals(&self) -> HashMap<String, BTreeMap<DateTime<Utc>, DataPoint>> {
+        self.connection_total_data.clone()
+    }
+
+    pub fn get_remote_address_totals(&self) -> HashMap<String, BTreeMap<DateTime<Utc>, DataPoint>> {
+        self.remote_address_total_data.clone()
+    }
+
 
 
 }

@@ -11,8 +11,7 @@ use std::{
     collections::{BTreeMap,HashMap},
     fs::File,
     sync::{
-        atomic::{AtomicBool, AtomicUsize, Ordering},
-        Arc, Mutex, RwLock,
+        atomic::{AtomicBool, AtomicUsize, Ordering}, Arc, Mutex, MutexGuard, RwLock
     },
     thread::{self, park_timeout},
     time::{Duration, Instant}, vec,
@@ -56,8 +55,71 @@ fn greet(name: &str) -> String {
 
 #[tauri::command]
 fn gpl() -> Vec<String> {
-    //ui.data_collector.get_process_total_data();
     let mut v_temp = PROCESS_LIST.lock().unwrap();
+    let mut v = get_list(&v_temp);
+    v
+}
+
+#[tauri::command]
+fn gcl() -> Vec<String> {
+    let mut v_temp = CONNECTION_LIST.lock().unwrap();
+    let mut v = get_list(&v_temp);
+    v
+}
+
+#[tauri::command]
+fn gral() -> Vec<String> {
+    let mut v_temp = REMOTE_ADDRESS_LIST.lock().unwrap();
+    let mut v = get_list(&v_temp);
+    v
+}
+
+#[tauri::command]
+fn gpr(process: &str, time: &str) -> Vec<Vec<String>> {
+    let mut v_temp = PROCESS_RATES.lock().unwrap();
+    let mut v = get_rates_and_totals(process, time, &v_temp);
+    return v;
+
+}
+
+#[tauri::command]
+fn gcr(connection: &str, time: &str) -> Vec<Vec<String>> {
+    let mut v_temp = CONNECTION_RATES.lock().unwrap();
+    let mut v = get_rates_and_totals(connection, time, &v_temp);
+    return v;
+
+}
+
+#[tauri::command]
+fn grar(remote_address: &str, time: &str) -> Vec<Vec<String>> {
+    let mut v_temp = REMOTE_ADDRESS_RATES.lock().unwrap();
+    let mut v = get_rates_and_totals(remote_address, time, &v_temp);
+    return v;
+}
+
+#[tauri::command]
+fn gpt(process: &str, time: &str) -> Vec<Vec<String>> {
+    let mut v_temp = PROCESS_TOTALS.lock().unwrap();
+    let mut v = get_rates_and_totals(process, time, &v_temp);
+    return v;
+}
+
+#[tauri::command]
+fn gct(connection: &str, time: &str) -> Vec<Vec<String>> {
+    let mut v_temp = CONNECTION_TOTALS.lock().unwrap();
+    let mut v = get_rates_and_totals(connection, time, &v_temp);
+    return v;
+}
+
+#[tauri::command]
+fn grat(remote_address: &str, time: &str) -> Vec<Vec<String>> {
+    let mut v_temp = REMOTE_ADDRESS_TOTALS.lock().unwrap();
+    let mut v = get_rates_and_totals(remote_address, time, &v_temp);
+    return v;
+
+}
+
+fn get_list(v_temp: &MutexGuard<Vec<String>>) -> Vec<String> {
     let mut v = Vec::new();
     for i in v_temp.iter() {
         v.push(i.clone());
@@ -65,9 +127,7 @@ fn gpl() -> Vec<String> {
     v
 }
 
-#[tauri::command]
-fn gpr(process: &str, time: &str) -> Vec<Vec<String>> {
-    let mut v_temp = PROCESS_RATES.lock().unwrap();
+fn get_rates_and_totals(name: &str,time: &str, v_temp: &MutexGuard<HashMap<String, BTreeMap<DateTime<Utc>,DataPoint>>>) -> Vec<Vec<String>>{
     let mut v = Vec::new();
     let mut start_time = Utc::now() - Duration::from_secs(60 * 60 * 24 * 30);
 
@@ -85,7 +145,7 @@ fn gpr(process: &str, time: &str) -> Vec<Vec<String>> {
     
 
     let mut subset = BTreeMap::new();
-    match v_temp.get(process) {
+    match v_temp.get(name) {
         Some(data) => {
             for (timestamp, value) in data {
                 if timestamp >= &start_time {
@@ -104,15 +164,22 @@ fn gpr(process: &str, time: &str) -> Vec<Vec<String>> {
     if (v.len() == 0) {
         v.push(vec!["No data available".to_string(), "No data available".to_string(), "No data available".to_string()]);
     }
-    return v;
-
+    v
 }
-
 
 
 lazy_static! {
     static ref PROCESS_LIST: Mutex<Vec<String>> = Mutex::new(Vec::new());
+    static ref CONNECTION_LIST: Mutex<Vec<String>> = Mutex::new(Vec::new());
+    static ref REMOTE_ADDRESS_LIST: Mutex<Vec<String>> = Mutex::new(Vec::new());
+
     static ref PROCESS_RATES: Mutex<HashMap<String, BTreeMap<DateTime<Utc>,DataPoint>>> = Mutex::new(HashMap::new());
+    static ref CONNECTION_RATES: Mutex<HashMap<String, BTreeMap<DateTime<Utc>,DataPoint>>> = Mutex::new(HashMap::new());
+    static ref REMOTE_ADDRESS_RATES: Mutex<HashMap<String, BTreeMap<DateTime<Utc>,DataPoint>>> = Mutex::new(HashMap::new());
+
+    static ref PROCESS_TOTALS: Mutex<HashMap<String, BTreeMap<DateTime<Utc>,DataPoint>>> = Mutex::new(HashMap::new());
+    static ref CONNECTION_TOTALS: Mutex<HashMap<String, BTreeMap<DateTime<Utc>,DataPoint>>> = Mutex::new(HashMap::new());
+    static ref REMOTE_ADDRESS_TOTALS: Mutex<HashMap<String, BTreeMap<DateTime<Utc>,DataPoint>>> = Mutex::new(HashMap::new());
 
 }
 fn main() -> anyhow::Result<()> {
@@ -175,7 +242,7 @@ fn main() -> anyhow::Result<()> {
         });
         
         tauri::Builder::default()
-            .invoke_handler(tauri::generate_handler![greet, gpl])
+            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat])
             .run(tauri::generate_context!())
             .expect("error while running tauri application");
         
@@ -200,7 +267,7 @@ fn main() -> anyhow::Result<()> {
         });
 
         tauri::Builder::default()
-            .invoke_handler(tauri::generate_handler![greet, gpl, gpr])
+            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat])
             .run(tauri::generate_context!())
             .expect("error while running tauri application");
         
@@ -317,9 +384,24 @@ where
                             ui.data_collector.save_remote_address_total_data(one_month_ago);
                             let mut proc_list = PROCESS_LIST.lock().unwrap();
                             *proc_list = ui.data_collector.get_process_list();
+                            let mut conn_list = CONNECTION_LIST.lock().unwrap();
+                            *conn_list = ui.data_collector.get_connection_list();
+                            let mut remote_address_list = REMOTE_ADDRESS_LIST.lock().unwrap();
+                            *remote_address_list = ui.data_collector.get_remote_address_list();
 
                             let mut proc_rates = PROCESS_RATES.lock().unwrap();
                             *proc_rates = ui.data_collector.get_process_rates();
+                            let mut conn_rates = CONNECTION_RATES.lock().unwrap();
+                            *conn_rates = ui.data_collector.get_connection_rates();
+                            let mut remote_address_rates = REMOTE_ADDRESS_RATES.lock().unwrap();
+                            *remote_address_rates = ui.data_collector.get_remote_address_rates();
+
+                            let mut proc_total = PROCESS_TOTALS.lock().unwrap();
+                            *proc_total = ui.data_collector.get_process_totals();
+                            let mut conn_total = CONNECTION_TOTALS.lock().unwrap();
+                            *conn_total = ui.data_collector.get_connection_totals();
+                            let mut remote_address_total = REMOTE_ADDRESS_TOTALS.lock().unwrap();
+                            *remote_address_total = ui.data_collector.get_remote_address_totals();
                         }
                     }
                     let render_duration = render_start_time.elapsed();
