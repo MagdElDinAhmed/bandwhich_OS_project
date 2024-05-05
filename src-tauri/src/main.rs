@@ -15,7 +15,7 @@ use std::{
         Arc, Mutex, RwLock,
     },
     thread::{self, park_timeout},
-    time::{Duration, Instant},
+    time::{Duration, Instant}, vec,
 };
 
 use chrono::Utc;
@@ -35,6 +35,8 @@ use simplelog::WriteLogger;
 
 use crate::cli::Opt;
 use crate::os::ProcessInfo;
+use lazy_static::lazy_static;
+use tauri::{Manager, State};
 
 //const DISPLAY_DELTA: Duration = Duration::from_millis(1000);
 
@@ -44,9 +46,38 @@ use crate::os::ProcessInfo;
 use network::throttling::{set_egress_bandwidth_limit, set_ingress_bandwidth_limit};
 
 
+// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 
+#[tauri::command]
+fn greet(name: &str) -> String {
+    format!("Hello, {}! You've been greeted from Rust!", name)
+}
+
+#[tauri::command]
+fn gpl() -> Vec<String> {
+    //ui.data_collector.get_process_total_data();
+    let mut v_temp = PROCESS_LIST.lock().unwrap();
+    let mut v = Vec::new();
+    for i in v_temp.iter() {
+        v.push(i.clone());
+    }
+    v
+}
+
+
+lazy_static! {
+    static ref PROCESS_LIST: Mutex<Vec<String>> = Mutex::new(Vec::new());
+
+}
 fn main() -> anyhow::Result<()> {
+    
+    
+    
+
     println!("This should print immediately when the program runs.");
+
+
+    
 
     // let upload_limit_mbps = 10;
     // let download_limit_mbps = 1;
@@ -69,6 +100,8 @@ fn main() -> anyhow::Result<()> {
         }
     }
 
+    
+
 
     let opts = Opt::parse();
 
@@ -88,7 +121,20 @@ fn main() -> anyhow::Result<()> {
     let os_input = os::get_input(opts.interface.as_deref(), !opts.no_resolve, opts.dns_server)?;
     if opts.raw {
         let terminal_backend = RawTerminalBackend {};
-        start(terminal_backend, os_input, opts);
+        //let terminal_backend_clone = RawTerminalBackend {};
+        //let ui = Arc::new(Mutex::new(Ui::new(terminal_backend_clone, &opts)));
+          
+        let backend = thread::spawn(move || {
+            start(terminal_backend, os_input, opts);
+        });
+        
+        tauri::Builder::default()
+            .invoke_handler(tauri::generate_handler![greet, gpl])
+            .run(tauri::generate_context!())
+            .expect("error while running tauri application");
+        
+        backend.join().unwrap();
+        
     } else {
         let Ok(()) = terminal::enable_raw_mode() else {
             anyhow::bail!(
@@ -100,8 +146,22 @@ fn main() -> anyhow::Result<()> {
         // Ignore enteralternatescreen error
         let _ = crossterm::execute!(&mut stdout, terminal::EnterAlternateScreen);
         let terminal_backend = CrosstermBackend::new(stdout);
-        start(terminal_backend, os_input, opts);
+        //let terminal_backend_clone = CrosstermBackend::new(std::io::stdout());
+        
+
+        let backend = thread::spawn(move || {
+            start(terminal_backend, os_input, opts);
+        });
+
+        tauri::Builder::default()
+            .invoke_handler(tauri::generate_handler![greet, gpl])
+            .run(tauri::generate_context!())
+            .expect("error while running tauri application");
+        
+        backend.join().unwrap();
     }
+    
+    
     Ok(())
 }
 
@@ -121,6 +181,9 @@ pub fn start<B>(terminal_backend: B, os_input: OsInputOutput, opts: Opt)
 where
     B: Backend + Send + 'static,
 {
+    
+    
+    
     // init refresh_rate
     let refresh_rate = Duration::from_millis(opts.refresh_rate);
     
@@ -142,6 +205,7 @@ where
     let raw_mode = opts.raw;
 
     let network_utilization = Arc::new(Mutex::new(Utilization::new()));
+    
     let ui = Arc::new(Mutex::new(Ui::new(terminal_backend, &opts)));
 
     let display_handler = thread::Builder::new()
@@ -205,6 +269,8 @@ where
                             ui.data_collector.save_process_total_data(one_month_ago);
                             ui.data_collector.save_connection_total_data(one_month_ago);
                             ui.data_collector.save_remote_address_total_data(one_month_ago);
+                            let mut proc_list = PROCESS_LIST.lock().unwrap();
+                            *proc_list = ui.data_collector.get_process_list();
                         }
                     }
                     let render_duration = render_start_time.elapsed();
@@ -344,4 +410,10 @@ where
     for thread_handler in active_threads {
         thread_handler.join().unwrap()
     }
+
+    
 }
+
+
+
+

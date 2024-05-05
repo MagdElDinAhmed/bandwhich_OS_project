@@ -629,6 +629,14 @@ impl DataCollector {
         writer.flush().unwrap();
     }
 
+    pub fn get_process_list(&self) -> Vec<String> {
+        let mut process_list = Vec::new();
+        for (process_name, _) in &self.process_rate_data {
+            process_list.push(process_name.clone());
+        }
+        process_list
+    }
+
 
 
 }
