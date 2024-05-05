@@ -18,6 +18,7 @@ use crate::{
 
 use super::DataCollector;
 
+
 pub struct Ui<B>
 where
     B: Backend,

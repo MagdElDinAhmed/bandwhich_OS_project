@@ -5,10 +5,10 @@ use csv::{ReaderBuilder, StringRecord};
 use std::path::Path;
 
 use chrono::prelude::*;
-
+#[derive(Debug, Clone)]
 pub struct DataPoint {
-    value_up: u128,
-    value_down: u128,
+    pub value_up: u128,
+    pub value_down: u128,
 }
 
 
@@ -635,6 +635,34 @@ impl DataCollector {
             process_list.push(process_name.clone());
         }
         process_list
+    }
+
+    pub fn get_connection_list(&self) -> Vec<String> {
+        let mut connection_list = Vec::new();
+        for (connection_name, _) in &self.connection_rate_data {
+            connection_list.push(connection_name.clone());
+        }
+        connection_list
+    }
+
+    pub fn get_remote_address_list(&self) -> Vec<String> {
+        let mut remote_address_list = Vec::new();
+        for (remote_address_name, _) in &self.remote_address_rate_data {
+            remote_address_list.push(remote_address_name.clone());
+        }
+        remote_address_list
+    }
+
+    pub fn get_process_rates(&self) -> HashMap<String, BTreeMap<DateTime<Utc>, DataPoint>> {
+        self.process_rate_data.clone()
+    }
+
+    pub fn get_connection_rates(&self) -> HashMap<String, BTreeMap<DateTime<Utc>, DataPoint>> {
+        self.connection_rate_data.clone()
+    }
+
+    pub fn get_remote_address_rates(&self) -> HashMap<String, BTreeMap<DateTime<Utc>, DataPoint>> {
+        self.remote_address_rate_data.clone()
     }
 
 

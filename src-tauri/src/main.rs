@@ -8,7 +8,7 @@ mod os;
 mod tests;
 
 use std::{
-    collections::HashMap,
+    collections::{BTreeMap,HashMap},
     fs::File,
     sync::{
         atomic::{AtomicBool, AtomicUsize, Ordering},
@@ -16,15 +16,16 @@ use std::{
     },
     thread::{self, park_timeout},
     time::{Duration, Instant}, vec,
+
 };
 
-use chrono::Utc;
+use chrono::{Utc, prelude::*};
 use clap::Parser;
 use crossterm::{
     event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     terminal,
 };
-use display::{elapsed_time, RawTerminalBackend, Ui};
+use display::{elapsed_time, RawTerminalBackend, Ui, DataPoint};
 use network::{
     dns::{self, IpTable},
     LocalSocket, Sniffer, Utilization,
@@ -64,9 +65,39 @@ fn gpl() -> Vec<String> {
     v
 }
 
+#[tauri::command]
+fn gpr(process: &str, time: &str) -> Vec<Vec<String>> {
+    let mut v_temp = PROCESS_RATES.lock().unwrap();
+    let mut v = Vec::new();
+    
+
+    let mut subset = BTreeMap::new();
+    match v_temp.get(process) {
+        Some(data) => {
+            for (timestamp, value) in data {
+                subset.insert(timestamp.clone(), value);
+            }
+        },
+        None => {},
+    }
+    for (timestamp, value) in subset {
+        let time = timestamp.to_rfc3339();
+        let upload = value.value_up.to_string();
+        let download = value.value_down.to_string();
+        v.push(vec![time, upload, download]);
+    }
+    if (v.len() == 0) {
+        v.push(vec!["No data available".to_string(), "No data available".to_string(), "No data available".to_string()]);
+    }
+    return v;
+
+}
+
+
 
 lazy_static! {
     static ref PROCESS_LIST: Mutex<Vec<String>> = Mutex::new(Vec::new());
+    static ref PROCESS_RATES: Mutex<HashMap<String, BTreeMap<DateTime<Utc>,DataPoint>>> = Mutex::new(HashMap::new());
 
 }
 fn main() -> anyhow::Result<()> {
@@ -154,7 +185,7 @@ fn main() -> anyhow::Result<()> {
         });
 
         tauri::Builder::default()
-            .invoke_handler(tauri::generate_handler![greet, gpl])
+            .invoke_handler(tauri::generate_handler![greet, gpl, gpr])
             .run(tauri::generate_context!())
             .expect("error while running tauri application");
         
@@ -271,6 +302,9 @@ where
                             ui.data_collector.save_remote_address_total_data(one_month_ago);
                             let mut proc_list = PROCESS_LIST.lock().unwrap();
                             *proc_list = ui.data_collector.get_process_list();
+
+                            let mut proc_rates = PROCESS_RATES.lock().unwrap();
+                            *proc_rates = ui.data_collector.get_process_rates();
                         }
                     }
                     let render_duration = render_start_time.elapsed();
