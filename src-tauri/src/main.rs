@@ -139,6 +139,12 @@ fn get_rates_and_totals(name: &str,time: &str, v_temp: &MutexGuard<HashMap<Strin
     {
         start_time = Utc::now() - Duration::from_secs(60 * 60 * 24 * 7);
     }
+    else if (time == "Last Second"){
+        start_time = Utc::now() - Duration::from_secs(5); 
+    }
+    else if (time == "Last Hour"){
+        start_time = Utc::now() - Duration::from_secs(60 * 60);
+    }
     else {
         start_time = Utc.timestamp_opt(0, 0).unwrap();
     }
@@ -165,6 +171,29 @@ fn get_rates_and_totals(name: &str,time: &str, v_temp: &MutexGuard<HashMap<Strin
         v.push(vec!["No data available".to_string(), "No data available".to_string(), "No data available".to_string()]);
     }
     v
+}
+
+#[tauri::command]
+fn get_throttling_threshold(threshold_value: i32) -> Result<String, String> {
+    println!("hi");
+    println!("{}", threshold_value);
+    let mut result = String::new();
+    let interfaces = pnet::datalink::interfaces();
+
+    for iface in interfaces {
+        if iface.is_up() && !iface.ips.is_empty() {
+            match set_egress_bandwidth_limit(&iface.name, threshold_value as usize) {
+                Ok(_) => result.push_str(&format!("Upload limit set successfully for {}\n", iface.name)),
+                Err(e) => return Err(format!("Failed to set egress bandwidth limit on {}: {}", iface.name, e)),
+            }
+            match set_ingress_bandwidth_limit(&iface.name, threshold_value as usize) {
+                Ok(_) => result.push_str(&format!("Download limit set successfully for {}\n", iface.name)),
+                Err(e) => return Err(format!("Failed to set ingress bandwidth limit on {}: {}", iface.name, e)),
+            }
+        }
+    }
+
+    Ok(format!("Bandwidth limits set to {} Mbps for all interfaces", threshold_value))
 }
 
 
@@ -242,7 +271,7 @@ fn main() -> anyhow::Result<()> {
         });
         
         tauri::Builder::default()
-            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat])
+            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat, get_throttling_threshold])
             .run(tauri::generate_context!())
             .expect("error while running tauri application");
         
@@ -267,7 +296,7 @@ fn main() -> anyhow::Result<()> {
         });
 
         tauri::Builder::default()
-            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat])
+            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat, get_throttling_threshold])
             .run(tauri::generate_context!())
             .expect("error while running tauri application");
         

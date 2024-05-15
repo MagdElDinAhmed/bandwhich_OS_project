@@ -1,0 +1,56 @@
+html, body {
+    height: 100%;
+    margin: 0;
+  }
+
+.darkBackground {
+  background-color: #1a1a1a;
+  height: 100vh;
+}
+
+.basicButton{
+    background-color: #011936;
+    color: #87CEEB;
+    margin: 10px 0px 0px 5px;
+    border-radius: 20px;
+    text-transform: none;
+    background-color: #87CEEB;
+    color: #011936;
+    border-color: #011936;
+}
+/* make basicButton on hover color button #FFED65 */
+.basicButton:hover{
+    background-color: #FFED65;
+    color: #011936;
+    border-color: #011936;
+}
+
+.basicInput {
+    border-radius: 20px;
+    background-color: #f0f0f0;
+    color: #011936;
+    border-color: #011936;
+}
+
+/* Adjust placeholder text */
+.basicTextArea::placeholder {
+    /* Vertical alignment */
+    vertical-align: middle;
+
+}
+
+/* get biotic font from fonts */
+@font-face {
+  font-family: 'Biotic';
+  src: url('./assets/fonts/Demo-Biotic/Demo_Fonts/Fontspring-DEMO-biotic-bold.otf') format('opentype');
+}
+
+.flexRow{
+    display: flex;
+    flex-direction: row;
+}
+
+.flexColumn{
+    display: flex;
+    flex-direction: column;
+}
