@@ -6,8 +6,9 @@ body {
 
 .darkBackground {
   background-color: #1a1a1a;
-  height: 100%;
-  width: 100%;
+  min-height: 100vh;
+  /* height: 100%; */
+  /* width: 100%; */
 }
 
 .basicButton {
@@ -85,4 +86,22 @@ body {
 .navbar li a:hover {
   background-color: yellow;
   color: white;
+}
+
+.navbarButton {
+  /* background-color: #011936;
+  color: #87ceeb; */
+  margin: 10px 0px 0px 5px;
+  border-radius: 20px;
+  text-transform: none;
+  background-color: #87ceeb;
+  color: #011936;
+  border-color: #011936;
+}
+
+/* make basicButton on hover color button #FFED65 */
+.navbarButton:hover {
+  background-color: #ffed65;
+  color: #011936;
+  border-color: #011936;
 }

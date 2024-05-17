@@ -1,14 +1,9 @@
 import { useState, useEffect } from "react";
-import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api";
-import { Button, Typography, TextField } from "@mui/material";
-// import textfield from mui
-// import TextField from '@mui/material/TextField';
+import { Typography } from "@mui/material";
 import "./Tauri.css";
-// import { PieChart } from "@mui/x-charts/PieChart";
-import { PieChart, Pie, Legend, Tooltip, ResponsiveContainer } from "recharts";
 import { Chart } from "react-google-charts";
-import { Link } from "react-router-dom";
+import CustomNav from "./Nav";
 
 export default function PieCharts() {
   const [pieChartConnections, setPieChartConnections] = useState();
@@ -248,26 +243,14 @@ export default function PieCharts() {
 
   useEffect(() => {
     getPieCharts();
+    // uncomment below to make the page refresh every 5 seconds
+    // const interval = setInterval(getPieCharts, 5000);
+    // return () => clearInterval(interval);
   }, []);
 
   return (
     <div className="darkBackground">
-      {/* Navbar */}
-      {/* <nav>
-        <ul className="navbar">
-          <li>
-            <Link to="/">Home</Link>
-          </li>
-          <li>
-            <Link to="/">Pie Charts</Link>
-          </li>
-          <li>
-            <Link to="/">Line Graphs</Link>
-          </li>
-        </ul>
-      </nav> */}
-
-      {/* Text above columns */}
+      <CustomNav />
       <div>
         <Typography
           variant="body1"
@@ -281,13 +264,8 @@ export default function PieCharts() {
         </Typography>
       </div>
 
-      {/* Main content */}
       <div style={{ display: "flex", flexDirection: "column" }}>
-        {/* Titles for columns */}
-
-        {/* Charts */}
         <div style={{ display: "flex", flexDirection: "row" }}>
-          {/* First column */}
           <div
             style={{
               display: "flex",
