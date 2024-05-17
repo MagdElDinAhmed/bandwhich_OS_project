@@ -301,7 +301,7 @@ fn main() -> anyhow::Result<()> {
         });
 
         tauri::Builder::default()
-            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat, get_throttling_threshold])
+            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat, get_throttling_threshold,get_draw_data])
             .run(tauri::generate_context!())
             .expect("error while running tauri application");
         

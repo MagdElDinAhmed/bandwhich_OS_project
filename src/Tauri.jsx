@@ -20,13 +20,35 @@ function Tauri() {
   const [viewRemoteAddressTotal, setViewRemoteAddressTotal] = useState(false);
   const [interfaceTotal, setInterfaceTotal] = useState([]);
   const [isTotal, setIsTotal] = useState(false);
-
+  const [tableData, setTableData] = useState(null);
   // const [selectedProcess, setSelectedProcess] = useState("");
 
   // 
-  async function get_live_data(){
-    
-  }
+
+  const getLiveData = async () => {
+    try {
+      const liveData = await invoke('get_draw_data');
+      if (liveData.length > 0) {
+        setTableData(liveData[2]); // Set the first table data
+      }
+    } catch (error) {
+      console.error('Error fetching live data:', error);
+    }
+  };
+
+  useEffect(() => {
+    // Fetch data initially
+    getLiveData();
+
+    // Set up a timer to fetch data periodically
+    const intervalId = setInterval(() => {
+      getLiveData();
+    }, 500); // Adjust the interval as needed (5000ms = 5 seconds)
+
+    // Clear the timer when the component unmounts
+    return () => clearInterval(intervalId);
+  }, []);
+
   async function gcl() {
     try {
       const connList = await invoke("gcl");
@@ -142,12 +164,7 @@ function Tauri() {
 
   return (
     <div className="darkBackground">
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
+      <div style={{ display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", flexDirection: "row" }}>
           <Typography
             sx={{
@@ -165,15 +182,8 @@ function Tauri() {
           onSubmit={handleThrottlingThreshold}
           style={{ marginLeft: "30px", marginTop: "5px" }}
         >
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              marginTop: "20px",
-            }}
-          >
+          <div style={{ display: "flex", flexDirection: "column", marginTop: "20px" }}>
             <label htmlFor="bandwidthLimit" style={{ color: "white" }}>
-              {" "}
               Set a limit in Mbps to throttle an interface:
             </label>
             <div style={{ display: "flex", flexDirection: "row" }}>
@@ -207,14 +217,7 @@ function Tauri() {
           View past data for:
         </div>
         {/* choose between interfaces, processes, remote addresses*/}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            marginLeft: "30px",
-            marginTop: "5px",
-          }}
-        >
+        <div style={{ display: "flex", flexDirection: "row", marginLeft: "30px", marginTop: "5px" }}>
           <button onClick={displayInterfacesTotal} className="basicButton">
             Interfaces
           </button>
@@ -244,7 +247,7 @@ function Tauri() {
             >
               <thead>
                 <tr>
-                  <th sx={{ color: "white" }}>Connection</th>
+                  <th>Connection</th>
                   <th>Time Stamp</th>
                   <th>Upload Rate</th>
                   <th>Download Rate</th>
@@ -254,8 +257,50 @@ function Tauri() {
             </table>
           </div>
         )}
+        {/* Render the table fetched from the backend */}
+        {tableData && (
+          <div
+            style={{
+              color: "white",
+              marginLeft: "30px",
+              marginRight: "30px",
+              marginTop: "20px",
+              maxHeight: "300px",
+              overflowY: "auto",
+              border: "1px solid white",
+            }}
+          >
+            <h2 style={{ color: "white" }}>{tableData.title}</h2>
+            <table
+              style={{
+                color: "white",
+                marginLeft: "30px",
+                marginRight: "30px",
+                textAlign: "center",
+              }}
+            >
+              <thead>
+                <tr>
+                  {tableData.column_names.map((columnName, index) => (
+                    <th key={index} style={{ color: "white" }}>{columnName}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {tableData.rows.map((row, rowIndex) => (
+                  <tr key={rowIndex}>
+                    {row.map((cell, cellIndex) => (
+                      <td key={cellIndex} style={{ color: "white" }}>{cell}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
-}
+};
+
 export default Tauri;
