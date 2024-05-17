@@ -5,19 +5,24 @@ use std::io::prelude::*;
 
 use chrono::prelude::*;
 use ratatui::{backend::Backend, Terminal};
-
+use serde::Serialize;
 use crate::{
     cli::{Opt, RenderOpts},
     display::{
         components::{HeaderDetails, HelpText, Layout, Table},
-        UIState,
+        UIState,DataCollector
     },
     network::{display_connection_string, display_ip_or_host, LocalSocket, Utilization},
     os::ProcessInfo,
 };
 
-use super::DataCollector;
 
+#[derive(Serialize,Clone,Debug)]
+pub struct FrontendTableData {
+    pub title: String,
+    pub column_names: Vec<String>,
+    pub rows: Vec<Vec<String>>,
+}
 
 pub struct Ui<B>
 where
@@ -494,5 +499,24 @@ where
     }
     pub fn end(&mut self) {
         self.terminal.show_cursor().unwrap();
+    }
+    pub fn get_draw_data(&self) -> Vec<FrontendTableData> {
+        let tables = self.get_tables_to_display();
+        let mut frontend_data = Vec::new();
+
+        for table in tables {
+            let column_names = table.get_data().column_names().iter().map(|&s| s.to_string()).collect();
+            let rows = table.get_data().rows().into_iter().map(|r| r.to_vec()).collect();
+
+            let data = FrontendTableData {
+                title: table.get_title().to_string(),
+                column_names,
+                rows,
+            };
+
+            frontend_data.push(data);
+        }
+
+        frontend_data
     }
 }

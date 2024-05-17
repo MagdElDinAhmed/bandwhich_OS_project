@@ -17,14 +17,14 @@ use std::{
     time::{Duration, Instant}, vec,
 
 };
-
+use serde::Serialize;
 use chrono::{Utc, prelude::*};
 use clap::Parser;
 use crossterm::{
     event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     terminal,
 };
-use display::{elapsed_time, RawTerminalBackend, Ui, DataPoint};
+use display::{elapsed_time, RawTerminalBackend, Ui, DataPoint, FrontendTableData};
 use network::{
     dns::{self, IpTable},
     LocalSocket, Sniffer, Utilization,
@@ -118,7 +118,11 @@ fn grat(remote_address: &str, time: &str) -> Vec<Vec<String>> {
     return v;
 
 }
-
+#[tauri::command]
+fn get_draw_data() -> Vec<FrontendTableData> {
+    let data = GLOBAL_FRONTEND_TABLE_DATA.lock().unwrap();
+    data.clone()
+}
 fn get_list(v_temp: &MutexGuard<Vec<String>>) -> Vec<String> {
     let mut v = Vec::new();
     for i in v_temp.iter() {
@@ -210,6 +214,7 @@ lazy_static! {
     static ref CONNECTION_TOTALS: Mutex<HashMap<String, BTreeMap<DateTime<Utc>,DataPoint>>> = Mutex::new(HashMap::new());
     static ref REMOTE_ADDRESS_TOTALS: Mutex<HashMap<String, BTreeMap<DateTime<Utc>,DataPoint>>> = Mutex::new(HashMap::new());
 
+    static ref GLOBAL_FRONTEND_TABLE_DATA: Mutex<Vec<FrontendTableData>> = Mutex::new(Vec::new());
 }
 fn main() -> anyhow::Result<()> {
     
@@ -271,7 +276,7 @@ fn main() -> anyhow::Result<()> {
         });
         
         tauri::Builder::default()
-            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat, get_throttling_threshold])
+            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat, get_throttling_threshold, get_draw_data])
             .run(tauri::generate_context!())
             .expect("error while running tauri application");
         
@@ -364,6 +369,11 @@ where
 
             move || {
                 while running.load(Ordering::Acquire) {
+                    {
+                        let mut ui =ui.lock().unwrap();
+                        let mut data = GLOBAL_FRONTEND_TABLE_DATA.lock().unwrap();
+                        *data = ui.get_draw_data();
+                    }
                     let render_start_time = Instant::now();
                     let utilization = { network_utilization.lock().unwrap().clone_and_reset() };
                     let OpenSockets { sockets_to_procs } = get_open_sockets();

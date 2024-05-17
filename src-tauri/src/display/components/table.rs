@@ -9,7 +9,7 @@ use ratatui::{
     widgets::{Block, Borders, Row},
 };
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
-
+use serde::Serialize;
 use crate::{
     display::{Bandwidth, BandwidthUnitFamily, DisplayBandwidth, UIState},
     network::{display_connection_string, display_ip_or_host},
@@ -119,7 +119,7 @@ impl DisplayLayout {
 /// If tables with different number of columns are added in the future,
 /// then new variants should be added.
 #[derive(Clone, Debug)]
-enum TableData {
+pub enum TableData {
     /// A table with 3 columns.
     C3(NColsTableData<3>),
     /// A table with 4 columns.
@@ -139,21 +139,21 @@ impl From<NColsTableData<4>> for TableData {
 }
 
 impl TableData {
-    fn column_names(&self) -> &[&str] {
+    pub fn column_names(&self) -> &[&str] {
         match self {
             Self::C3(inner) => &inner.column_names,
             Self::C4(inner) => &inner.column_names,
         }
     }
 
-    fn rows(&self) -> Vec<&[String]> {
+    pub fn rows(&self) -> Vec<&[String]> {
         match self {
             Self::C3(inner) => inner.rows.iter().map(|r| r.as_slice()).collect(),
             Self::C4(inner) => inner.rows.iter().map(|r| r.as_slice()).collect(),
         }
     }
 
-    fn column_selector(&self) -> &dyn Fn(&DisplayLayout) -> Vec<usize> {
+    pub fn column_selector(&self) -> &dyn Fn(&DisplayLayout) -> Vec<usize> {
         match self {
             Self::C3(inner) => inner.column_selector.as_ref(),
             Self::C4(inner) => inner.column_selector.as_ref(),
@@ -167,17 +167,17 @@ impl TableData {
 /// being actually shown. If width-constrained, we might only show some of the columns.
 #[derive(Clone, Derivative)]
 #[derivative(Debug)]
-struct NColsTableData<const C: usize> {
+pub struct NColsTableData<const C: usize> {
     /// The name of each column.
-    column_names: [&'static str; C],
+    pub column_names: [&'static str; C],
     /// All rows of data.
-    rows: Vec<[String; C]>,
+    pub rows: Vec<[String; C]>,
     /// Function to determine which columns to show for a given layout.
     ///
     /// This function should return a vector of column indices.
     /// The indices should be less than `C`; otherwise this will cause a runtime panic.
     #[derivative(Debug(format_with = "debug_fn::<C>"))]
-    column_selector: Rc<ColumnSelectorFn>,
+    pub column_selector: Rc<ColumnSelectorFn>,
 }
 
 /// Clippy wanted me to write this. 💢
@@ -193,7 +193,7 @@ fn debug_fn<const C: usize>(
 /// A table displayed by bandwhich.
 #[derive(Clone, Debug)]
 pub struct Table {
-    title: &'static str,
+    pub title: &'static str,
     /// A layout mapping between minimum available width and the width of each column.
     ///
     /// Note that the width of each column here is the "desired minimum width".
@@ -204,11 +204,17 @@ pub struct Table {
     /// - If `Wt >= Wd`, spacers with a maximum width of `2` will be inserted
     ///   between columns; and then the columns will proportionally expand.
     /// - If `Wt < Wd`, columns will proportionally shrink.
-    width_cutoffs: Vec<(u16, DisplayLayout)>,
-    data: TableData,
+    pub width_cutoffs: Vec<(u16, DisplayLayout)>,
+    pub data: TableData,
 }
 
 impl Table {
+    pub fn get_data(&self) -> &TableData {
+        &self.data
+    }
+    pub fn get_title(&self) -> &str {
+        self.title
+    }
     pub fn create_connections_table(state: &UIState, ip_to_host: &HashMap<IpAddr, String>) -> Self {
         use DisplayLayout as D;
 

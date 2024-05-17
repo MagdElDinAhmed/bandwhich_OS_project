@@ -23,7 +23,10 @@ function Tauri() {
 
   // const [selectedProcess, setSelectedProcess] = useState("");
 
-  // FUNCTIONS
+  // 
+  async function get_live_data(){
+    
+  }
   async function gcl() {
     try {
       const connList = await invoke("gcl");
