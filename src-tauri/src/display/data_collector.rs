@@ -346,39 +346,42 @@ impl DataCollector {
     pub fn add_process_total_data(&mut self, process_name: String, timestamp: i64, up_total: u128, down_total: u128) {
         
         let timestamp = DateTime::<Utc>::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(timestamp, 0).unwrap(), Utc);
-
+        let last_run_total_up = self.get_process_total_file_upload(process_name.clone());
+        let last_run_total_down = self.get_process_total_file_download(process_name.clone());
         self.process_total_data
             .entry(process_name)
             .or_insert(BTreeMap::new())
             .insert(timestamp,DataPoint {
-                value_up: up_total,
-                value_down: down_total,
+                value_up: up_total + last_run_total_up,
+                value_down: down_total + last_run_total_down,
             });
     }
 
     pub fn add_connection_total_data(&mut self, connection_name: String, timestamp: i64, up_total: u128, down_total: u128) {
         
         let timestamp = DateTime::<Utc>::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(timestamp, 0).unwrap(), Utc);
-
+        let last_run_total_up = self.get_connection_total_file_upload(connection_name.clone());
+        let last_run_total_down = self.get_connection_total_file_download(connection_name.clone());
         self.connection_total_data
             .entry(connection_name)
             .or_insert(BTreeMap::new())
             .insert(timestamp,DataPoint {
-                value_up: up_total,
-                value_down: down_total,
+                value_up: up_total + last_run_total_up,
+                value_down: down_total + last_run_total_down,
             });
     }
 
     pub fn add_remote_address_total_data(&mut self, remote_address_name: String, timestamp: i64, up_total: u128, down_total: u128) {
         
         let timestamp = DateTime::<Utc>::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(timestamp, 0).unwrap(), Utc);
-
+        let last_run_total_up = self.get_remote_address_total_file_upload(remote_address_name.clone());
+        let last_run_total_down = self.get_remote_address_total_file_download(remote_address_name.clone());
         self.remote_address_total_data
             .entry(remote_address_name)
             .or_insert(BTreeMap::new())
             .insert(timestamp,DataPoint {
-                value_up: up_total,
-                value_down: down_total,
+                value_up: up_total + last_run_total_up,
+                value_down: down_total + last_run_total_down,
             });
     }
 
