@@ -60,7 +60,7 @@ function Tauri() {
       setViewProcessRates(false);
       setViewInterfaceTotal(true);
       setViewProcessTotal(false);
-      setViewRemoteAddressTotal(false);
+      // setViewRemoteAddressTotal(false);
       console.log("HEREEEE");
 
       const connections = await invoke("gpl");

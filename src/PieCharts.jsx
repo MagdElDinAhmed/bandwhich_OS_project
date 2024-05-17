@@ -244,8 +244,8 @@ export default function PieCharts() {
   useEffect(() => {
     getPieCharts();
     // uncomment below to make the page refresh every 5 seconds
-    // const interval = setInterval(getPieCharts, 5000);
-    // return () => clearInterval(interval);
+    const interval = setInterval(getPieCharts, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -260,7 +260,7 @@ export default function PieCharts() {
           marginBottom="40px"
         >
           View processes, connections, and remote addresses by percentages of
-          their consumption in the past hour
+          their total consumption in the past hour
         </Typography>
       </div>
 

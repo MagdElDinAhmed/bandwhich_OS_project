@@ -51,6 +51,12 @@ export default function CustomNav() {
           >
             Pie Charts
           </button>
+          <button
+            className="navbarButton"
+            onClick={() => navigate(`/LineGraphs`)}
+          >
+            Line Graphs
+          </button>
         </div>
       </div>
     </div>
