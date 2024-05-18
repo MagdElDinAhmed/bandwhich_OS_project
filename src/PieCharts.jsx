@@ -12,6 +12,7 @@ export default function PieCharts() {
   const [pieChartConnectionsUpload, setPieChartConnectionsUpload] = useState();
   const [pieChartProcessesUpload, setPieChartProcessesUpload] = useState();
   const [pieChartRAUpload, setPieChartRAUpload] = useState();
+  const [refreshRate, setRefreshRate] = useState(5000);
 
   async function fetchData(dataList, invokeCommand, type) {
     const data = [];
@@ -186,6 +187,11 @@ export default function PieCharts() {
     setPieChartRAUpload(pieChartRAUpload);
   }
 
+  function handleRefreshRateChange(event) {
+    const { value } = event.target;
+    setRefreshRate(parseInt(value));
+  }
+
   function createPieChartData(dataList, label, dOrU) {
     let sortedData;
     if (dOrU === "download") {
@@ -243,10 +249,10 @@ export default function PieCharts() {
 
   useEffect(() => {
     getPieCharts();
-    // uncomment below to make the page refresh every 5 seconds
-    const interval = setInterval(getPieCharts, 5000);
+    // Set interval to refresh data and charts
+    const interval = setInterval(getPieCharts, refreshRate);
     return () => clearInterval(interval);
-  }, []);
+  }, [refreshRate]);
 
   return (
     <div className="darkBackground">
@@ -257,11 +263,31 @@ export default function PieCharts() {
           color="white"
           fontStyle="italic"
           marginLeft="20px"
-          marginBottom="40px"
+          marginBottom="20px"
         >
           View processes, connections, and remote addresses by percentages of
           their total consumption in the past hour
         </Typography>
+      </div>
+      <div
+        style={{
+          marginTop: "20px",
+          marginBottom: "40px",
+          marginLeft: "20px",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Typography variant="h6" color="white">
+          Refresh Rate (milliseconds):
+        </Typography>
+        <input
+          type="number"
+          value={refreshRate}
+          onChange={handleRefreshRateChange}
+          style={{ marginLeft: "10px" }}
+        />
       </div>
 
       <div style={{ display: "flex", flexDirection: "column" }}>

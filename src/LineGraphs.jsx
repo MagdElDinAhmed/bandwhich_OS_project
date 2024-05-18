@@ -16,6 +16,7 @@ export default function LineGraphs() {
   const [dataList, setDataList] = useState([]);
   const [selectedItem, setSelectedItem] = useState("");
   const [lineGraphData, setLineGraphData] = useState(null);
+  const [refreshRate, setRefreshRate] = useState(5000); // Default refresh rate is 5000ms (5 seconds)
 
   useEffect(() => {
     if (dataType) {
@@ -34,10 +35,10 @@ export default function LineGraphs() {
       if (selectedItem) {
         fetchLineGraphData();
       }
-    }, 5000);
+    }, refreshRate);
 
     return () => clearInterval(interval);
-  }, [selectedItem, dataType]);
+  }, [selectedItem, dataType, refreshRate]);
 
   const fetchDataList = async () => {
     let list;
@@ -89,6 +90,11 @@ export default function LineGraphs() {
       chartData.push([new Date(rate[0]), parseInt(rate[1]), parseInt(rate[2])]);
     });
     setLineGraphData(chartData);
+  };
+
+  const handleRefreshRateChange = (event) => {
+    const { value } = event.target;
+    setRefreshRate(parseInt(value));
   };
 
   return (
@@ -155,6 +161,23 @@ export default function LineGraphs() {
               </FormControl>
             </>
           )}
+        </div>
+        <div
+          style={{
+            marginTop: "20px",
+            marginBottom: "20px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Typography variant="h6">Refresh Rate (milliseconds):</Typography>
+          <input
+            type="number"
+            value={refreshRate}
+            onChange={handleRefreshRateChange}
+            style={{ marginLeft: "10px" }}
+          />
         </div>
         {lineGraphData && (
           <div>

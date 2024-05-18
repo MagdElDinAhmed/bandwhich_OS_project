@@ -57,6 +57,12 @@ export default function CustomNav() {
           >
             Line Graphs
           </button>
+          <button
+            className="navbarButton"
+            onClick={() => navigate(`/Throttle`)}
+          >
+            Throttle
+          </button>
         </div>
       </div>
     </div>

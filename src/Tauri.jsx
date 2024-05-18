@@ -5,31 +5,35 @@ import CustomNav from "./Nav";
 
 function Tauri() {
   // STATES
-  const [bandwidthLimit, setBandwidthLimit] = useState("");
-  const [selectedOption, setSelectedOption] = useState("");
-  const [interfaceList, setInterfaceList] = useState([]);
-  const [process_list, setProcessList] = useState([]);
-  const [viewProcessRates, setViewProcessRates] = useState(false);
-  const [viewInterfaceRates, setViewInterfaceRates] = useState(false);
-  const [viewRemoteAddressRates, setViewRemoteAddressRates] = useState(false);
+
+  const [refreshRate, setRefreshRate] = useState(500); // Default refresh rate is 500ms
   const [viewProcessTotal, setViewProcessTotal] = useState(false);
   const [viewInterfaceTotal, setViewInterfaceTotal] = useState(false);
+  const [viewRemoteAddressTotal, setViewRemoteAddressTotal] = useState(false);
   const [interfaceTotal, setInterfaceTotal] = useState([]);
-  const [isTotal, setIsTotal] = useState(false);
+  const [processTotal, setProcessTotal] = useState([]);
+  const [remoteAddressTotal, setRemoteAddressTotal] = useState([]);
   const [tableData, setTableData] = useState(null);
-  // const [selectedProcess, setSelectedProcess] = useState("");
-
-  //
-
+  const [tableDataProcesses, setTableDataProcesses] = useState(null);
+  const [tableDataRemoteAddresses, setTableDataRemoteAddresses] =
+    useState(null);
+  // Fetch live data
   const getLiveData = async () => {
     try {
       const liveData = await invoke("get_draw_data");
       if (liveData.length > 0) {
-        setTableData(liveData[2]); // Set the first table data
+        setTableData(liveData[2]); // Set the interface table data
+        setTableDataProcesses(liveData[1]); // Set the processes table data
+        setTableDataRemoteAddresses(liveData[0]); // Set the remote addresses table data
       }
     } catch (error) {
       console.error("Error fetching live data:", error);
     }
+  };
+
+  const handleRefreshRateChange = (event) => {
+    const { value } = event.target;
+    setRefreshRate(parseInt(value));
   };
 
   useEffect(() => {
@@ -39,74 +43,56 @@ function Tauri() {
     // Set up a timer to fetch data periodically
     const intervalId = setInterval(() => {
       getLiveData();
-    }, 500); // Adjust the interval as needed (5000ms = 5 seconds)
+    }, refreshRate); // Use refreshRate as interval duration
 
     // Clear the timer when the component unmounts
     return () => clearInterval(intervalId);
-  }, []);
+  }, [refreshRate]); // Include refreshRate in the dependency array
 
   async function gcl() {
     try {
       const connList = await invoke("gcl");
       const interfaceList = connList.map((interfaceOption) => {
-        return <option value={interfaceOption}>{interfaceOption}</option>;
+        return (
+          <option key={interfaceOption} value={interfaceOption}>
+            {interfaceOption}
+          </option>
+        );
       });
       setInterfaceList(interfaceList);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
   }
-  async function gpl() {
-    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    const proc_list = await invoke("gpl");
-    setProcessList(proc_list);
-    document.getElementById("myDropdown").classList.toggle("show");
-  }
-  async function gpr() {
-    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    const rates = await invoke("gpr", {
-      process: selectedProcess,
-      time: selectedTime,
-    });
-    setGreetMsg("Process Rates");
-    const processRates = rates.map((rate) => rate.map((item) => item));
-    setProcessRates(processRates);
-  }
-  async function handleThrottlingThreshold(event) {
-    event.preventDefault();
-    await invoke("get_throttling_threshold", {
-      thresholdValue: parseInt(bandwidthLimit),
-    });
-  }
-  async function displayInterfacesTotal() {
-    if (viewInterfaceTotal) {
-      setViewInterfaceTotal(false);
-    } else {
-      setViewInterfaceTotal(true);
-      setViewInterfaceRates(false);
-      setViewRemoteAddressRates(false);
-      setViewProcessRates(false);
-      setViewInterfaceTotal(true);
-      setViewProcessTotal(false);
-      // setViewRemoteAddressTotal(false);
-      console.log("HEREEEE");
 
+  async function gpl() {
+    try {
+      const procList = await invoke("gpl");
+      setProcessList(procList);
+      document.getElementById("myDropdown").classList.toggle("show");
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  }
+
+  async function displayInterfacesTotal() {
+    setViewInterfaceTotal(!viewInterfaceTotal);
+    setViewProcessTotal(false);
+    setViewRemoteAddressTotal(false);
+
+    if (!viewInterfaceTotal) {
       const connections = await invoke("gpl");
-      // console.log(connections);
       const interfaceRows = [];
-      for (let i = 0; i < connections.length; i++) {
-        const connection = connections[i];
+      for (const connection of connections) {
         const rates = await invoke("gpt", {
           process: connection,
           time: "Last Hour",
         });
-        // for (let j = 0; j < rates.length; j++) {
         for (let j = rates.length - 1; j >= 0; j--) {
           const timestamp = new Date(rates[j][0]);
-          // Format the date and time
           const formattedDateTime = timestamp.toLocaleString();
           interfaceRows.push(
-            <tr>
+            <tr key={`${connection}-${j}`}>
               <td>{connection}</td>
               <td>{rates[j] ? formattedDateTime : "Loading..."}</td>
               <td>{rates[j] ? rates[j][1] : "Loading..."}</td>
@@ -114,46 +100,71 @@ function Tauri() {
             </tr>
           );
         }
-        setInterfaceTotal(interfaceRows);
-        // console.log("interfaceTotal: ", interfaceTotal);
-        console.log("Connection: ", connection);
-        console.log("Rates: ", rates);
       }
+      setInterfaceTotal(interfaceRows);
     }
   }
-  async function displaySomething() {
-    const processUtilization = await invoke("get_process_utilization");
-    console.log(processUtilization);
+
+  async function displayProcessesTotal() {
+    setViewProcessTotal(!viewProcessTotal);
+    setViewInterfaceTotal(false);
+    setViewRemoteAddressTotal(false);
+
+    if (!viewProcessTotal) {
+      const processes = await invoke("gpl");
+      const processRows = [];
+      for (const process of processes) {
+        const rates = await invoke("gpr", {
+          process: process,
+          time: "Last Hour",
+        });
+        for (let j = rates.length - 1; j >= 0; j--) {
+          const timestamp = new Date(rates[j][0]);
+          const formattedDateTime = timestamp.toLocaleString();
+          processRows.push(
+            <tr key={`${process}-${j}`}>
+              <td>{process}</td>
+              <td>{rates[j] ? formattedDateTime : "Loading..."}</td>
+              <td>{rates[j] ? rates[j][1] : "Loading..."}</td>
+              <td>{rates[j] ? rates[j][2] : "Loading..."}</td>
+            </tr>
+          );
+        }
+      }
+      setProcessTotal(processRows);
+    }
   }
 
-  const getProcesses = async () => {
-    setViewInterfaceRates(false);
-    setViewRemoteAddressRates(false);
-    setViewProcessRates(true);
+  async function displayRemoteAddressesTotal() {
+    setViewRemoteAddressTotal(!viewRemoteAddressTotal);
+    setViewInterfaceTotal(false);
+    setViewProcessTotal(false);
 
-    const processes = await invoke("gpl");
-    console.log(processes);
-    for (let i = 0; i < processes.length; i++) {
-      // call gpr for each process
-      const process = processes[i];
-      const rates = await invoke("gpr", {
-        process: process,
-        time: "Last Second",
-      });
-      console.log("Process: ", process);
-      console.log("Rates: ", rates);
+    if (!viewRemoteAddressTotal) {
+      const remoteAddresses = await invoke("gra");
+      const remoteAddressRows = [];
+      for (const remoteAddress of remoteAddresses) {
+        const rates = await invoke("grr", {
+          remoteAddress: remoteAddress,
+          time: "Last Hour",
+        });
+        for (let j = rates.length - 1; j >= 0; j--) {
+          const timestamp = new Date(rates[j][0]);
+          const formattedDateTime = timestamp.toLocaleString();
+          remoteAddressRows.push(
+            <tr key={`${remoteAddress}-${j}`}>
+              <td>{remoteAddress}</td>
+              <td>{rates[j] ? formattedDateTime : "Loading..."}</td>
+              <td>{rates[j] ? rates[j][1] : "Loading..."}</td>
+              <td>{rates[j] ? rates[j][2] : "Loading..."}</td>
+            </tr>
+          );
+        }
+      }
+      setRemoteAddressTotal(remoteAddressRows);
     }
-  };
+  }
 
-  const handleChange = (event) => {
-    setBandwidthLimit(event.target.value);
-  };
-  const handleSelectInterface = (event) => {
-    setSelectedOption(event.target.value);
-    console.log(event.target.value);
-  };
-
-  // EFFECTS
   useEffect(() => {
     gcl();
   }, []);
@@ -161,65 +172,37 @@ function Tauri() {
   return (
     <div className="darkBackground">
       <CustomNav />
-      <form
-        onSubmit={handleThrottlingThreshold}
-        style={{ marginLeft: "30px", marginTop: "5px" }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            marginTop: "20px",
-          }}
-        >
-          <label htmlFor="bandwidthLimit" style={{ color: "white" }}>
-            {" "}
-            Set a limit in Mbps to throttle an interface:
-          </label>
-          <div style={{ display: "flex", flexDirection: "row" }}>
-            <input
-              type="text"
-              id="bandwidthLimit"
-              placeholder="Bandwidth Limit in Mbps"
-              value={bandwidthLimit}
-              onChange={handleChange}
-              className="basicInput"
-            />
-            <button type="submit" className="basicButton">
-              Submit
-            </button>
-          </div>
-        </div>
-      </form>
-      <form style={{ marginLeft: "30px", marginTop: "5px" }}>
-        <select
-          value={selectedOption}
-          onChange={handleSelectInterface}
-          style={{ padding: "0px 7px 0 7px" }}
-        >
-          <option value="" disabled selected>
-            Select interface
-          </option>
-          {interfaceList}
-        </select>
-      </form>
-      <div style={{ color: "white", marginLeft: "30px", marginTop: "5px" }}>
-        View past data for:
-      </div>
-      {/* choose between interfaces, processes, remote addresses*/}
       <div
         style={{
           display: "flex",
-          flexDirection: "row",
-          marginLeft: "30px",
-          marginTop: "5px",
+          justifyContent: "center",
+          alignItems: "center",
+          flexDirection: "column",
+          color: "white",
+          fontStyle: "italic",
         }}
       >
-        <button onClick={displayInterfacesTotal} className="basicButton">
-          Interfaces
-        </button>
-        <button className="basicButton">Processes</button>
-        <button className="basicButton">Remote Addresses</button>
+        View Live Consumption Data
+      </div>
+      <div
+        style={{
+          marginTop: "10px",
+          marginBottom: "10px",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <label htmlFor="refreshRateInput" style={{ color: "white" }}>
+          Refresh Rate (milliseconds):
+        </label>
+        <input
+          type="number"
+          id="refreshRateInput"
+          value={refreshRate}
+          onChange={handleRefreshRateChange}
+          style={{ marginLeft: "10px" }}
+        />
       </div>
       {viewInterfaceTotal && (
         <div
@@ -254,51 +237,242 @@ function Tauri() {
           </table>
         </div>
       )}
-      {/* Render the table fetched from the backend */}
-      {tableData && (
+      {viewProcessTotal && (
         <div
           style={{
             color: "white",
             marginLeft: "30px",
             marginRight: "30px",
-            marginTop: "20px",
+            marginTop: "5px",
             maxHeight: "300px",
             overflowY: "auto",
             border: "1px solid white",
           }}
         >
-          <h2 style={{ color: "white" }}>{tableData.title}</h2>
           <table
             style={{
               color: "white",
-              marginLeft: "30px",
-              marginRight: "30px",
+              marginLeft: "100px",
+              marginRight: "100px",
+              maxHeight: "300px",
               textAlign: "center",
             }}
           >
             <thead>
               <tr>
-                {tableData.column_names.map((columnName, index) => (
-                  <th key={index} style={{ color: "white" }}>
-                    {columnName}
-                  </th>
-                ))}
+                <th>Process</th>
+                <th>Time Stamp</th>
+                <th>Upload Rate</th>
+                <th>Download Rate</th>
               </tr>
             </thead>
-            <tbody>
-              {tableData.rows.map((row, rowIndex) => (
-                <tr key={rowIndex}>
-                  {row.map((cell, cellIndex) => (
-                    <td key={cellIndex} style={{ color: "white" }}>
-                      {cell}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
+            <tbody>{processTotal}</tbody>
           </table>
         </div>
       )}
+      {viewRemoteAddressTotal && (
+        <div
+          style={{
+            color: "white",
+            marginLeft: "30px",
+            marginRight: "30px",
+            marginTop: "5px",
+            maxHeight: "300px",
+            overflowY: "auto",
+            border: "1px solid white",
+          }}
+        >
+          <table
+            style={{
+              color: "white",
+              marginLeft: "100px",
+              marginRight: "100px",
+              maxHeight: "300px",
+              textAlign: "center",
+            }}
+          >
+            <thead>
+              <tr>
+                <th>Remote Address</th>
+                <th>Time Stamp</th>
+                <th>Upload Rate</th>
+                <th>Download Rate</th>
+              </tr>
+            </thead>
+            <tbody>{remoteAddressTotal}</tbody>
+          </table>
+        </div>
+      )}
+      <div
+        style={{
+          minWidth: "100vw",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          flexDirection: "column",
+        }}
+      >
+        <div
+          style={{
+            width: "1000px",
+          }}
+        >
+          {tableData && (
+            <div
+              style={{
+                color: "white",
+                marginLeft: "30px",
+                marginRight: "30px",
+                marginTop: "20px",
+                maxHeight: "300px",
+                overflowY: "auto",
+                border: "1px solid white",
+                display: "flex",
+                justifyContent: "center",
+              }}
+            >
+              <div>
+                <h2 style={{ color: "white", marginLeft: "30px" }}>
+                  {tableData.title}
+                </h2>
+                <table
+                  style={{
+                    color: "white",
+                    textAlign: "center",
+                    tableLayout: "fixed",
+                    width: "100%",
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      {tableData.column_names.map((columnName, index) => (
+                        <th key={index} style={{ color: "white" }}>
+                          {columnName}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tableData.rows.map((row, rowIndex) => (
+                      <tr key={rowIndex}>
+                        {row.map((cell, cellIndex) => (
+                          <td key={cellIndex} style={{ color: "white" }}>
+                            {cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {tableDataProcesses && (
+            <div
+              style={{
+                color: "white",
+                marginLeft: "30px",
+                marginRight: "30px",
+                marginTop: "20px",
+                maxHeight: "300px",
+                overflowY: "auto",
+                border: "1px solid white",
+                display: "flex",
+                justifyContent: "center",
+              }}
+            >
+              <div>
+                <h2 style={{ color: "white", marginLeft: "30px" }}>
+                  {tableDataProcesses.title}
+                </h2>
+                <table
+                  style={{
+                    color: "white",
+                    textAlign: "center",
+                    tableLayout: "fixed",
+                    width: "100%",
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      {tableDataProcesses.column_names.map(
+                        (columnName, index) => (
+                          <th key={index} style={{ color: "white" }}>
+                            {columnName}
+                          </th>
+                        )
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tableDataProcesses.rows.map((row, rowIndex) => (
+                      <tr key={rowIndex}>
+                        {row.map((cell, cellIndex) => (
+                          <td key={cellIndex} style={{ color: "white" }}>
+                            {cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {tableDataRemoteAddresses && (
+            <div
+              style={{
+                color: "white",
+                marginLeft: "30px",
+                marginRight: "30px",
+                marginTop: "20px",
+                maxHeight: "300px",
+                overflowY: "auto",
+                border: "1px solid white",
+                display: "flex",
+                justifyContent: "center",
+              }}
+            >
+              <div>
+                <h2 style={{ color: "white", marginLeft: "30px" }}>
+                  {tableDataRemoteAddresses.title}
+                </h2>
+                <table
+                  style={{
+                    color: "white",
+                    textAlign: "center",
+                    tableLayout: "fixed",
+                    width: "100%",
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      {tableDataRemoteAddresses.column_names.map(
+                        (columnName, index) => (
+                          <th key={index} style={{ color: "white" }}>
+                            {columnName}
+                          </th>
+                        )
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tableDataRemoteAddresses.rows.map((row, rowIndex) => (
+                      <tr key={rowIndex}>
+                        {row.map((cell, cellIndex) => (
+                          <td key={cellIndex} style={{ color: "white" }}>
+                            {cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
