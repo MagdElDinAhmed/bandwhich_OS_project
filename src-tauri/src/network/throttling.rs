@@ -20,7 +20,22 @@ pub fn set_egress_bandwidth_limit(interface: &str, limit_mbps: usize) -> Result<
         ))
     }
 }
+pub fn reset_egress_bandwidth_limit(interface: &str) -> Result<(), Error> {
+    let command = format!("tc qdisc del dev {} root", interface);
+    let output = Command::new("sh")
+        .arg("-c")
+        .arg(command)
+        .output()?;
 
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err(Error::new(
+            std::io::ErrorKind::Other,
+            "Failed to reset egress bandwidth limit"
+        ))
+    }
+}
 pub fn set_ingress_bandwidth_limit(interface: &str, limit_mbps: usize) -> Result<(), Error> {
     let setup_ifb = Command::new("sh")
         .arg("-c")
@@ -48,7 +63,6 @@ pub fn set_ingress_bandwidth_limit(interface: &str, limit_mbps: usize) -> Result
             "Failed to redirect ingress traffic"
         ));
     }
-
     let limit_ifb = Command::new("sh")
         .arg("-c")
         .arg(format!(
@@ -65,4 +79,46 @@ pub fn set_ingress_bandwidth_limit(interface: &str, limit_mbps: usize) -> Result
             "Failed to set ingress bandwidth limit"
         ))
     }
+}
+pub fn reset_ingress_bandwidth_limit(interface: &str) -> Result<(), Error> {
+    // Delete the ingress qdisc on the specified interface
+    let delete_ingress = Command::new("sh")
+        .arg("-c")
+        .arg(format!("tc qdisc del dev {} ingress", interface))
+        .output()?;
+
+    if !delete_ingress.status.success() {
+        return Err(Error::new(
+            std::io::ErrorKind::Other,
+            "Failed to delete ingress qdisc"
+        ));
+    }
+
+    // Delete the root qdisc on the ifb0 device
+    let delete_ifb = Command::new("sh")
+        .arg("-c")
+        .arg("tc qdisc del dev ifb0 root")
+        .output()?;
+
+    if !delete_ifb.status.success() {
+        return Err(Error::new(
+            std::io::ErrorKind::Other,
+            "Failed to delete ifb0 root qdisc"
+        ));
+    }
+
+    // Remove the ifb0 device
+    let remove_ifb = Command::new("sh")
+        .arg("-c")
+        .arg("ip link set dev ifb0 down; ip link delete ifb0 type ifb")
+        .output()?;
+
+    if !remove_ifb.status.success() {
+        return Err(Error::new(
+            std::io::ErrorKind::Other,
+            "Failed to remove ifb0 device"
+        ));
+    }
+
+    Ok(())
 }

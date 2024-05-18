@@ -9,13 +9,6 @@ export default function Throttle() {
   const [selectedOption, setSelectedOption] = useState("");
   const [interfaceList, setInterfaceList] = useState([]);
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    if (selectedOption && bandwidthLimit) {
-      onSubmit(selectedOption, bandwidthLimit);
-    }
-  };
-
   async function gcl() {
     try {
       const connList = await invoke("gcl");
@@ -34,11 +27,16 @@ export default function Throttle() {
 
   const handleThrottlingThreshold = async (event) => {
     event.preventDefault();
-    await invoke("get_throttling_threshold", {
-      thresholdValue: parseInt(bandwidthLimit),
-    });
+    try {
+      await invoke("throttle_bandwidth", {
+        thresholdValue: parseInt(bandwidthLimit),
+        interfaceName: selectedOption,
+      });
+      console.log(`Throttling set to ${bandwidthLimit} Mbps for ${selectedOption}`);
+    } catch (error) {
+      console.error("Failed to set throttling threshold:", error);
+    }
   };
-
   const handleChange = (event) => {
     setBandwidthLimit(event.target.value);
   };
@@ -73,7 +71,7 @@ export default function Throttle() {
             Set a limit in Mbps to throttle an interface:
           </label>
 
-          <form onSubmit={handleSubmit} style={{ width: "100%" }}>
+          <form onSubmit={handleThrottlingThreshold} style={{ width: "100%" }}>
             <div
               style={{
                 display: "flex",

@@ -8,14 +8,13 @@ mod os;
 mod tests;
 
 use std::{
-    collections::{BTreeMap,HashMap},
+    collections::{BTreeMap, HashMap},
     fs::File,
     sync::{
         atomic::{AtomicBool, AtomicUsize, Ordering}, Arc, Mutex, MutexGuard, RwLock
     },
     thread::{self, park_timeout},
     time::{Duration, Instant}, vec,
-
 };
 use serde::Serialize;
 use chrono::{Utc, prelude::*};
@@ -36,17 +35,9 @@ use simplelog::WriteLogger;
 use crate::cli::Opt;
 use crate::os::ProcessInfo;
 use lazy_static::lazy_static;
-use tauri::{Manager, State};
-
-//const DISPLAY_DELTA: Duration = Duration::from_millis(1000);
-
-// use std::process::Command;
-// use std::net::ToSocketAddrs;
-
-use network::throttling::{set_egress_bandwidth_limit, set_ingress_bandwidth_limit};
-
-
-// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
+use tauri::{Manager, State, WindowEvent};
+use network::throttling::{set_egress_bandwidth_limit, set_ingress_bandwidth_limit, reset_egress_bandwidth_limit, reset_ingress_bandwidth_limit };
+// Define your custom function to be executed before closing
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -118,11 +109,13 @@ fn grat(remote_address: &str, time: &str) -> Vec<Vec<String>> {
     return v;
 
 }
+
 #[tauri::command]
 fn get_draw_data() -> Vec<FrontendTableData> {
     let data = GLOBAL_FRONTEND_TABLE_DATA.lock().unwrap();
     data.clone()
 }
+
 fn get_list(v_temp: &MutexGuard<Vec<String>>) -> Vec<String> {
     let mut v = Vec::new();
     for i in v_temp.iter() {
@@ -131,28 +124,21 @@ fn get_list(v_temp: &MutexGuard<Vec<String>>) -> Vec<String> {
     v
 }
 
-fn get_rates_and_totals(name: &str,time: &str, v_temp: &MutexGuard<HashMap<String, BTreeMap<DateTime<Utc>,DataPoint>>>) -> Vec<Vec<String>>{
+fn get_rates_and_totals(name: &str, time: &str, v_temp: &MutexGuard<HashMap<String, BTreeMap<DateTime<Utc>, DataPoint>>>) -> Vec<Vec<String>> {
     let mut v = Vec::new();
     let mut start_time = Utc::now() - Duration::from_secs(60 * 60 * 24 * 30);
 
-    if (time == "Last Year")
-    {
+    if time == "Last Year" {
         start_time = Utc::now() - Duration::from_secs(60 * 60 * 24 * 365);
-    }
-    else if (time == "Last Week")
-    {
+    } else if time == "Last Week" {
         start_time = Utc::now() - Duration::from_secs(60 * 60 * 24 * 7);
-    }
-    else if (time == "Last Second"){
-        start_time = Utc::now() - Duration::from_secs(5); 
-    }
-    else if (time == "Last Hour"){
+    } else if time == "Last Second" {
+        start_time = Utc::now() - Duration::from_secs(5);
+    } else if time == "Last Hour" {
         start_time = Utc::now() - Duration::from_secs(60 * 60);
-    }
-    else {
+    } else {
         start_time = Utc.timestamp_opt(0, 0).unwrap();
     }
-    
 
     let mut subset = BTreeMap::new();
     match v_temp.get(name) {
@@ -178,14 +164,12 @@ fn get_rates_and_totals(name: &str,time: &str, v_temp: &MutexGuard<HashMap<Strin
 }
 
 #[tauri::command]
-fn get_throttling_threshold(threshold_value: i32) -> Result<String, String> {
-    println!("hi");
-    println!("{}", threshold_value);
+fn throttle_bandwidth(threshold_value: i32, interfaceName: &str) -> Result<String, String> {
     let mut result = String::new();
     let interfaces = pnet::datalink::interfaces();
 
     for iface in interfaces {
-        if iface.is_up() && !iface.ips.is_empty() {
+        if iface.is_up() && !iface.ips.is_empty() && iface.name == interfaceName {
             match set_egress_bandwidth_limit(&iface.name, threshold_value as usize) {
                 Ok(_) => result.push_str(&format!("Upload limit set successfully for {}\n", iface.name)),
                 Err(e) => return Err(format!("Failed to set egress bandwidth limit on {}: {}", iface.name, e)),
@@ -196,63 +180,30 @@ fn get_throttling_threshold(threshold_value: i32) -> Result<String, String> {
             }
         }
     }
-
-    Ok(format!("Bandwidth limits set to {} Mbps for all interfaces", threshold_value))
 }
-
 
 lazy_static! {
     static ref PROCESS_LIST: Mutex<Vec<String>> = Mutex::new(Vec::new());
     static ref CONNECTION_LIST: Mutex<Vec<String>> = Mutex::new(Vec::new());
     static ref REMOTE_ADDRESS_LIST: Mutex<Vec<String>> = Mutex::new(Vec::new());
 
-    static ref PROCESS_RATES: Mutex<HashMap<String, BTreeMap<DateTime<Utc>,DataPoint>>> = Mutex::new(HashMap::new());
-    static ref CONNECTION_RATES: Mutex<HashMap<String, BTreeMap<DateTime<Utc>,DataPoint>>> = Mutex::new(HashMap::new());
-    static ref REMOTE_ADDRESS_RATES: Mutex<HashMap<String, BTreeMap<DateTime<Utc>,DataPoint>>> = Mutex::new(HashMap::new());
+    static ref PROCESS_RATES: Mutex<HashMap<String, BTreeMap<DateTime<Utc>, DataPoint>>> = Mutex::new(HashMap::new());
+    static ref CONNECTION_RATES: Mutex<HashMap<String, BTreeMap<DateTime<Utc>, DataPoint>>> = Mutex::new(HashMap::new());
+    static ref REMOTE_ADDRESS_RATES: Mutex<HashMap<String, BTreeMap<DateTime<Utc>, DataPoint>>> = Mutex::new(HashMap::new());
 
-    static ref PROCESS_TOTALS: Mutex<HashMap<String, BTreeMap<DateTime<Utc>,DataPoint>>> = Mutex::new(HashMap::new());
-    static ref CONNECTION_TOTALS: Mutex<HashMap<String, BTreeMap<DateTime<Utc>,DataPoint>>> = Mutex::new(HashMap::new());
-    static ref REMOTE_ADDRESS_TOTALS: Mutex<HashMap<String, BTreeMap<DateTime<Utc>,DataPoint>>> = Mutex::new(HashMap::new());
+    static ref PROCESS_TOTALS: Mutex<HashMap<String, BTreeMap<DateTime<Utc>, DataPoint>>> = Mutex::new(HashMap::new());
+    static ref CONNECTION_TOTALS: Mutex<HashMap<String, BTreeMap<DateTime<Utc>, DataPoint>>> = Mutex::new(HashMap::new());
+    static ref REMOTE_ADDRESS_TOTALS: Mutex<HashMap<String, BTreeMap<DateTime<Utc>, DataPoint>>> = Mutex::new(HashMap::new());
 
     static ref GLOBAL_FRONTEND_TABLE_DATA: Mutex<Vec<FrontendTableData>> = Mutex::new(Vec::new());
 }
-fn main() -> anyhow::Result<()> {
-    
-    
-    
 
+fn main() -> anyhow::Result<()> {
     println!("This should print immediately when the program runs.");
 
-
-    
-
-    // let upload_limit_mbps = 10;
-    // let download_limit_mbps = 1;
-    let opts = Opt::parse();
-    // Retrieve all network interfaces
-    for iface in pnet::datalink::interfaces() {
-        if !iface.is_up() || iface.ips.is_empty() {
-            continue; // Skip interfaces that are down or have no IP
-        }
-
-        println!("Applying limits to interface: {}", iface.name);
-        match set_egress_bandwidth_limit(&iface.name, opts.upload_limit_mbps) {
-            Ok(_) => println!("Upload limit set successfully for {}", iface.name),
-            Err(e) => eprintln!("Failed to set upload limit for {}: {}", iface.name, e),
-        }
-
-        match set_ingress_bandwidth_limit(&iface.name, opts.download_limit_mbps) {
-            Ok(_) => println!("Download limit set successfully for {} with limit speed {}", iface.name, opts.download_limit_mbps),
-            Err(e) => eprintln!("Failed to set download limit for {}: {}", iface.name, e),
-        }
-    }
-
-    
-
-
     let opts = Opt::parse();
 
-    // init logging
+    // Init logging
     if let Some(ref log_path) = opts.log_to {
         let log_file = File::options()
             .write(true)
@@ -268,20 +219,43 @@ fn main() -> anyhow::Result<()> {
     let os_input = os::get_input(opts.interface.as_deref(), !opts.no_resolve, opts.dns_server)?;
     if opts.raw {
         let terminal_backend = RawTerminalBackend {};
-        //let terminal_backend_clone = RawTerminalBackend {};
-        //let ui = Arc::new(Mutex::new(Ui::new(terminal_backend_clone, &opts)));
-          
+
         let backend = thread::spawn(move || {
             start(terminal_backend, os_input, opts);
         });
-        
+
         tauri::Builder::default()
-            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat, get_throttling_threshold, get_draw_data])
+            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat, throttle_bandwidth, get_draw_data])
+            .setup(|app| {
+                let main_window = app.get_window("main").unwrap();
+                main_window.on_window_event(move |event| {
+                    if let WindowEvent::CloseRequested { api, .. } = event {
+                        api.prevent_close(); // Prevent the window from closing
+                        for iface in pnet::datalink::interfaces() {
+                            if !iface.is_up() || iface.ips.is_empty() {
+                                continue; // Skip interfaces that are down or have no IP
+                            }
+                    
+                            println!("Removing limits for interface: {}", iface.name);
+                            match reset_egress_bandwidth_limit(&iface.name) {
+                                Ok(_) => println!("Upload limit reset successfully for {}", iface.name),
+                                Err(e) => eprintln!("Failed to reset upload limit for {}: {}", iface.name, e),
+                            }
+                    
+                            match reset_ingress_bandwidth_limit(&iface.name) {
+                                Ok(_) => println!("Download limit reset successfully for {}", iface.name),
+                                Err(e) => eprintln!("Failed to reset download limit for {}: {}", iface.name, e),
+                            }
+                        }
+                        app.exit(0); // Then close the application
+                    }
+                });
+                Ok(())
+            })
             .run(tauri::generate_context!())
             .expect("error while running tauri application");
-        
+
         backend.join().unwrap();
-        
     } else {
         let Ok(()) = terminal::enable_raw_mode() else {
             anyhow::bail!(
@@ -293,22 +267,45 @@ fn main() -> anyhow::Result<()> {
         // Ignore enteralternatescreen error
         let _ = crossterm::execute!(&mut stdout, terminal::EnterAlternateScreen);
         let terminal_backend = CrosstermBackend::new(stdout);
-        //let terminal_backend_clone = CrosstermBackend::new(std::io::stdout());
-        
 
         let backend = thread::spawn(move || {
             start(terminal_backend, os_input, opts);
         });
 
         tauri::Builder::default()
-            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat, get_throttling_threshold,get_draw_data])
+            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat, throttle_bandwidth, get_draw_data])
+            .setup(|app| {
+                let main_window = app.get_window("main").unwrap();
+                main_window.on_window_event(move |event| {
+                    if let WindowEvent::CloseRequested { api, .. } = event {
+                        api.prevent_close(); // Prevent the window from closing
+                        for iface in pnet::datalink::interfaces() {
+                            if !iface.is_up() || iface.ips.is_empty() {
+                                continue; // Skip interfaces that are down or have no IP
+                            }
+                    
+                            println!("Removing limits for interface: {}", iface.name);
+                            match reset_egress_bandwidth_limit(&iface.name) {
+                                Ok(_) => println!("Upload limit reset successfully for {}", iface.name),
+                                Err(e) => eprintln!("Failed to reset upload limit for {}: {}", iface.name, e),
+                            }
+                    
+                            match reset_ingress_bandwidth_limit(&iface.name) {
+                                Ok(_) => println!("Download limit reset successfully for {} with limit speed {}", iface.name, opts.download_limit_mbps),
+                                Err(e) => eprintln!("Failed to reset download limit for {}: {}", iface.name, e),
+                            }
+                        }
+                        app.exit(0); // Then close the application
+                    }
+                });
+                Ok(())
+            })
             .run(tauri::generate_context!())
             .expect("error while running tauri application");
-        
+
         backend.join().unwrap();
     }
-    
-    
+
     Ok(())
 }
 
@@ -328,12 +325,8 @@ pub fn start<B>(terminal_backend: B, os_input: OsInputOutput, opts: Opt)
 where
     B: Backend + Send + 'static,
 {
-    
-    
-    
     // init refresh_rate
     let refresh_rate = Duration::from_millis(opts.refresh_rate);
-    
 
     let running = Arc::new(AtomicBool::new(true));
     let paused = Arc::new(AtomicBool::new(false));
@@ -352,7 +345,7 @@ where
     let raw_mode = opts.raw;
 
     let network_utilization = Arc::new(Mutex::new(Utilization::new()));
-    
+
     let ui = Arc::new(Mutex::new(Ui::new(terminal_backend, &opts)));
 
     let display_handler = thread::Builder::new()
@@ -370,7 +363,7 @@ where
             move || {
                 while running.load(Ordering::Acquire) {
                     {
-                        let mut ui =ui.lock().unwrap();
+                        let mut ui = ui.lock().unwrap();
                         let mut data = GLOBAL_FRONTEND_TABLE_DATA.lock().unwrap();
                         *data = ui.get_draw_data();
                     }
@@ -394,7 +387,7 @@ where
                         let ui_offset = ui_offset.load(Ordering::SeqCst);
                         if !paused {
                             ui.update_state(sockets_to_procs, utilization, ip_to_host);
-                            if opts.alert>0 {
+                            if opts.alert > 0 {
                                 ui.check_alerts(opts.alert);
                             }
                         }
@@ -502,7 +495,7 @@ where
                             if crossterm::execute!(&mut stdout, terminal::LeaveAlternateScreen)
                                 .is_err()
                             {
-                                println!("Error could not leave alternte screen");
+                                println!("Error could not leave alternate screen");
                             };
                             break;
                         }
@@ -580,10 +573,4 @@ where
     for thread_handler in active_threads {
         thread_handler.join().unwrap()
     }
-
-    
 }
-
-
-
-
