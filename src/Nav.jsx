@@ -43,25 +43,25 @@ export default function CustomNav() {
           }}
         >
           <button className="navbarButton" onClick={() => navigate(`/`)}>
-            Home
+            Live Traffic
           </button>
           <button
             className="navbarButton"
             onClick={() => navigate(`/PieCharts`)}
           >
-            Pie Charts
+            Total Consumption Charts
           </button>
           <button
             className="navbarButton"
             onClick={() => navigate(`/LineGraphs`)}
           >
-            Line Graphs
+            Rate of Consumption Graphs
           </button>
           <button
             className="navbarButton"
             onClick={() => navigate(`/Throttle`)}
           >
-            Throttle
+            Throttle Interface
           </button>
         </div>
       </div>

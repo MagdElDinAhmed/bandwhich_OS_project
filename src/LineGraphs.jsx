@@ -206,7 +206,7 @@ export default function LineGraphs() {
           />
         </div>
         {lineGraphData && (
-          <div>
+          <div style={{ marginBottom: "100px" }}>
             <Typography sx={{ marginLeft: "120px" }} variant="h6">
               Line Graph for {selectedItem}
             </Typography>

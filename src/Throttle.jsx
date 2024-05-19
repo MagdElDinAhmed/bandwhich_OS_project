@@ -9,6 +9,7 @@ export default function Throttle() {
   const [selectedOption, setSelectedOption] = useState("");
   const [selectedDirection, setSelectedDirection] = useState("");
   const [interfaceList, setInterfaceList] = useState([]);
+  const [successMessage, setSuccessMessage] = useState("");
 
   async function gcl() {
     try {
@@ -37,6 +38,9 @@ export default function Throttle() {
         console.log(
           `Throttling upload set to ${bandwidthLimit} Mbps for ${selectedOption}`
         );
+        setSuccessMessage(
+          `Throttling upload set to ${bandwidthLimit} Mbps for ${selectedOption}`
+        );
       } else if (selectedDirection === "download") {
         await invoke("throttle_bandwidth_download", {
           thresholdValue: parseInt(bandwidthLimit),
@@ -45,9 +49,13 @@ export default function Throttle() {
         console.log(
           `Throttling download set to ${bandwidthLimit} Mbps for ${selectedOption}`
         );
+        setSuccessMessage(
+          `Throttling download set to ${bandwidthLimit} Mbps for ${selectedOption}`
+        );
       }
     } catch (error) {
       console.error("Failed to set throttling threshold:", error);
+      setSuccessMessage("Failed to set throttling threshold");
     }
   };
 
@@ -162,6 +170,18 @@ export default function Throttle() {
               </button>
             </div>
           </form>
+          {successMessage && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                marginTop: "10px",
+              }}
+            >
+              <p style={{ color: "white" }}>{successMessage}</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

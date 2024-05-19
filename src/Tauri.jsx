@@ -315,6 +315,7 @@ function Tauri() {
         <div
           style={{
             width: "1000px",
+            marginBottom: "120px",
           }}
         >
           {tableData && (
