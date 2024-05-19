@@ -17,6 +17,7 @@ export default function LineGraphs() {
   const [selectedItem, setSelectedItem] = useState("");
   const [lineGraphData, setLineGraphData] = useState(null);
   const [refreshRate, setRefreshRate] = useState(5000); // Default refresh rate is 5000ms (5 seconds)
+  const [selectedTimeRange, setSelectedTimeRange] = useState("Last Hour");
 
   useEffect(() => {
     if (dataType) {
@@ -38,7 +39,7 @@ export default function LineGraphs() {
     }, refreshRate);
 
     return () => clearInterval(interval);
-  }, [selectedItem, dataType, refreshRate]);
+  }, [selectedItem, dataType, refreshRate, selectedTimeRange]);
 
   const fetchDataList = async () => {
     let list;
@@ -53,13 +54,16 @@ export default function LineGraphs() {
     for (let item of list) {
       let rates;
       if (dataType === "connections") {
-        rates = await invoke("gcr", { connection: item, time: "Last Hour" });
+        rates = await invoke("gcr", {
+          connection: item,
+          time: selectedTimeRange,
+        });
       } else if (dataType === "processes") {
-        rates = await invoke("gpr", { process: item, time: "Last Hour" });
+        rates = await invoke("gpr", { process: item, time: selectedTimeRange });
       } else if (dataType === "remoteAddresses") {
         rates = await invoke("grar", {
           remoteAddress: item,
-          time: "Last Hour",
+          time: selectedTimeRange,
         });
       }
       if (rates.length > 0 && rates[0][0] !== "No data available") {
@@ -74,18 +78,21 @@ export default function LineGraphs() {
     if (dataType === "connections") {
       rates = await invoke("gcr", {
         connection: selectedItem,
-        time: "Last Hour",
+        time: selectedTimeRange,
       });
     } else if (dataType === "processes") {
-      rates = await invoke("gpr", { process: selectedItem, time: "Last Hour" });
+      rates = await invoke("gpr", {
+        process: selectedItem,
+        time: selectedTimeRange,
+      });
     } else if (dataType === "remoteAddresses") {
       rates = await invoke("grar", {
         remoteAddress: selectedItem,
-        time: "Last Hour",
+        time: selectedTimeRange,
       });
     }
 
-    const chartData = [["Time", "Download Rate", "Upload Rate"]];
+    const chartData = [["Time", "Upload Rate", "Download Rate"]];
     rates.forEach((rate) => {
       chartData.push([new Date(rate[0]), parseInt(rate[1]), parseInt(rate[2])]);
     });
@@ -95,6 +102,10 @@ export default function LineGraphs() {
   const handleRefreshRateChange = (event) => {
     const { value } = event.target;
     setRefreshRate(parseInt(value));
+  };
+
+  const handleTimeRangeChange = (event) => {
+    setSelectedTimeRange(event.target.value);
   };
 
   return (
@@ -121,7 +132,6 @@ export default function LineGraphs() {
             className="basicDropDown"
             style={{ width: "100%", marginBottom: 20, height: 50 }}
           >
-            {/* <InputLabel style={{ color: "#1a1a1a" }}>Data Type</InputLabel> */}
             <Select
               value={dataType}
               onChange={(e) => {
@@ -146,7 +156,6 @@ export default function LineGraphs() {
                 className="basicDropDown"
                 style={{ width: "100%", marginBottom: 20, height: 50 }}
               >
-                {/* <InputLabel style={{ color: "#1a1a1a" }}>{dataType}</InputLabel> */}
                 <Select
                   value={selectedItem}
                   onChange={(e) => setSelectedItem(e.target.value)}
@@ -161,6 +170,23 @@ export default function LineGraphs() {
               </FormControl>
             </>
           )}
+
+          <Typography variant="h6">Select Time Range</Typography>
+          <FormControl
+            variant="filled"
+            className="basicDropDown"
+            style={{ width: "100%", marginBottom: 20, height: 50 }}
+          >
+            <Select
+              value={selectedTimeRange}
+              onChange={handleTimeRangeChange}
+              style={{ color: "#1a1a1a", transform: "translateY(-6px)" }}
+            >
+              <MenuItem value="Last Hour">Last Hour</MenuItem>
+              <MenuItem value="Last Day">Last Day</MenuItem>
+              <MenuItem value="Last Week">Last Week</MenuItem>
+            </Select>
+          </FormControl>
         </div>
         <div
           style={{
@@ -188,7 +214,7 @@ export default function LineGraphs() {
               chartType="LineChart"
               data={lineGraphData}
               options={{
-                title: `Download and Upload Rates for ${selectedItem}`,
+                title: `Upload and Download Rates for ${selectedItem}`,
                 titleTextStyle: { color: "white" },
                 hAxis: {
                   title: "Time",

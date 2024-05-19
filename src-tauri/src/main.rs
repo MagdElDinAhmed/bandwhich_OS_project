@@ -132,6 +132,8 @@ fn get_rates_and_totals(name: &str, time: &str, v_temp: &MutexGuard<HashMap<Stri
         start_time = Utc::now() - Duration::from_secs(60 * 60 * 24 * 365);
     } else if time == "Last Week" {
         start_time = Utc::now() - Duration::from_secs(60 * 60 * 24 * 7);
+    } else if time == "Last Day"{
+        start_time = Utc::now() - Duration::from_secs(60 * 60 * 24);
     } else if time == "Last Second" {
         start_time = Utc::now() - Duration::from_secs(5);
     } else if time == "Last Hour" {
@@ -245,7 +247,7 @@ fn main() -> anyhow::Result<()> {
         });
 
         tauri::Builder::default()
-            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat, throttle_bandwidth_upload, get_draw_data])
+            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat, throttle_bandwidth_upload, throttle_bandwidth_download, get_draw_data])
             .run(tauri::generate_context!())
             .expect("error while running tauri application");
 
@@ -267,7 +269,7 @@ fn main() -> anyhow::Result<()> {
         });
 
         tauri::Builder::default()
-            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat, throttle_bandwidth_upload, get_draw_data])
+            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat, throttle_bandwidth_upload, throttle_bandwidth_download, get_draw_data])
             .run(tauri::generate_context!())
             .expect("error while running tauri application");
 
