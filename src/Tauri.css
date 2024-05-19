@@ -1,0 +1,115 @@
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+.darkBackground {
+  background-color: #1a1a1a;
+  min-height: 100vh;
+  min-width: 100vw;
+  /* height: 100%; */
+  /* width: 100%; */
+}
+
+.basicDropDown {
+  border-radius: 20px;
+  background-color: #87ceeb;
+  color: #011936;
+  border-color: #87ceeb;
+}
+
+.basicButton {
+  background-color: #011936;
+  color: #87ceeb;
+  margin: 10px 0px 0px 5px;
+  border-radius: 20px;
+  text-transform: none;
+  background-color: #87ceeb;
+  color: #011936;
+  border-color: #011936;
+}
+/* make basicButton on hover color button #FFED65 */
+.basicButton:hover {
+  background-color: #ffed65;
+  color: #011936;
+  border-color: #011936;
+}
+
+.basicInput {
+  border-radius: 20px;
+  background-color: #f0f0f0;
+  color: #011936;
+  border-color: #011936;
+}
+
+/* Adjust placeholder text */
+.basicTextArea::placeholder {
+  /* Vertical alignment */
+  vertical-align: middle;
+}
+
+/* get biotic font from fonts */
+@font-face {
+  font-family: "Biotic";
+  src: url("./assets/fonts/Demo-Biotic/Demo_Fonts/Fontspring-DEMO-biotic-bold.otf")
+    format("opentype");
+}
+
+.flexRow {
+  display: flex;
+  flex-direction: row;
+}
+
+.flexColumn {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Add a CSS selector to target the labels */
+.mui-dataviz-labels text {
+  fill: white !important; /* Set the font color to white */
+}
+
+/* CSS */
+.navbar {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+
+.navbar li {
+  display: inline;
+  margin-right: 20px;
+}
+
+.navbar li a {
+  text-decoration: none;
+  color: blue;
+  padding: 10px 20px;
+  border-radius: 5px;
+}
+
+.navbar li a:hover {
+  background-color: yellow;
+  color: white;
+}
+
+.navbarButton {
+  /* background-color: #011936;
+  color: #87ceeb; */
+  margin: 10px 0px 0px 5px;
+  border-radius: 20px;
+  text-transform: none;
+  background-color: #87ceeb;
+  color: #011936;
+  border-color: #011936;
+}
+
+/* make basicButton on hover color button #FFED65 */
+.navbarButton:hover {
+  background-color: #ffed65;
+  color: #011936;
+  border-color: #011936;
+}
