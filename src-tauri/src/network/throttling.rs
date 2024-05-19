@@ -103,7 +103,11 @@ pub fn set_ingress_bandwidth_limit(interface: &str, limit_mbps: usize) -> Result
             "Failed to redirect ingress traffic",
         ));
     }
-
+    let remove_ifb_qdisc_again = Command::new("sh")
+        .arg("-c")
+        .arg("sudo tc qdisc del dev ifb0 root")
+        .output()?;
+        
     // Set up token bucket filter on ifb0 to limit bandwidth
     let limit_ifb = Command::new("sh")
         .arg("-c")

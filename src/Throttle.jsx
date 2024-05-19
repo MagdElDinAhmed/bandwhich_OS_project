@@ -28,7 +28,7 @@ export default function Throttle() {
   const handleThrottlingThreshold = async (event) => {
     event.preventDefault();
     try {
-      await invoke("throttle_bandwidth", {
+      await invoke("throttle_bandwidth_upload", {
         thresholdValue: parseInt(bandwidthLimit),
         interfaceName: selectedOption,
       });

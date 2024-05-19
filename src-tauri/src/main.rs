@@ -179,6 +179,22 @@ fn throttle_bandwidth_upload(threshold_value: i32, interface_name: &str) -> Resu
                 Ok(_) => result.push_str(&format!("Upload limit set successfully for {}\n", iface.name)),
                 Err(e) => return Err(format!("Failed to set egress bandwidth limit on {}: {}", iface.name, e)),
             }
+        } 
+        }
+    Ok(result)
+}
+#[tauri::command]
+fn throttle_bandwidth_download(threshold_value: i32, interface_name: &str) -> Result<String, String> {
+    let mut result = String::new();
+    let interfaces = pnet::datalink::interfaces();
+
+    for iface in interfaces {   
+        // reset_egress_bandwidth_limit(&iface.name);
+        // reset_ingress_bandwidth_limit(&iface.name);
+        let is_up = iface.is_up();
+        let has_ips = !iface.ips.is_empty();
+        let names_match = iface.name.trim() == interface_name.trim();
+        if names_match {
             match set_ingress_bandwidth_limit(&iface.name, threshold_value as usize) {
                 Ok(_) => result.push_str(&format!("Download limit set successfully for {}\n", iface.name)),
                 Err(e) => return Err(format!("Failed to set ingress bandwidth limit on {}: {}", iface.name, e)),
@@ -204,7 +220,7 @@ lazy_static! {
 }
 
 fn main() -> anyhow::Result<()> {
-
+    set_ingress_bandwidth_limit("enp0s3", 1000);
     let opts = Opt::parse();
 
     // Init logging
