@@ -36,7 +36,7 @@ use crate::cli::Opt;
 use crate::os::ProcessInfo;
 use lazy_static::lazy_static;
 use tauri::{Manager, State, WindowEvent};
-use network::throttling::{set_egress_bandwidth_limit, set_ingress_bandwidth_limit, reset_egress_bandwidth_limit, reset_ingress_bandwidth_limit };
+use network::throttling::{set_egress_bandwidth_limit, reset_egress_bandwidth_limit, set_ingress_bandwidth_limit, reset_ingress_bandwidth_limit};
 // Define your custom function to be executed before closing
 
 #[tauri::command]
@@ -164,12 +164,17 @@ fn get_rates_and_totals(name: &str, time: &str, v_temp: &MutexGuard<HashMap<Stri
 }
 
 #[tauri::command]
-fn throttle_bandwidth(threshold_value: i32, interfaceName: &str) -> Result<String, String> {
+fn throttle_bandwidth_upload(threshold_value: i32, interface_name: &str) -> Result<String, String> {
     let mut result = String::new();
     let interfaces = pnet::datalink::interfaces();
 
-    for iface in interfaces {
-        if iface.is_up() && !iface.ips.is_empty() && iface.name == interfaceName {
+    for iface in interfaces {   
+        // reset_egress_bandwidth_limit(&iface.name);
+        // reset_ingress_bandwidth_limit(&iface.name);
+        let is_up = iface.is_up();
+        let has_ips = !iface.ips.is_empty();
+        let names_match = iface.name.trim() == interface_name.trim();
+        if names_match {
             match set_egress_bandwidth_limit(&iface.name, threshold_value as usize) {
                 Ok(_) => result.push_str(&format!("Upload limit set successfully for {}\n", iface.name)),
                 Err(e) => return Err(format!("Failed to set egress bandwidth limit on {}: {}", iface.name, e)),
@@ -178,10 +183,10 @@ fn throttle_bandwidth(threshold_value: i32, interfaceName: &str) -> Result<Strin
                 Ok(_) => result.push_str(&format!("Download limit set successfully for {}\n", iface.name)),
                 Err(e) => return Err(format!("Failed to set ingress bandwidth limit on {}: {}", iface.name, e)),
             }
+        } 
         }
-    }
+    Ok(result)
 }
-
 lazy_static! {
     static ref PROCESS_LIST: Mutex<Vec<String>> = Mutex::new(Vec::new());
     static ref CONNECTION_LIST: Mutex<Vec<String>> = Mutex::new(Vec::new());
@@ -199,7 +204,6 @@ lazy_static! {
 }
 
 fn main() -> anyhow::Result<()> {
-    println!("This should print immediately when the program runs.");
 
     let opts = Opt::parse();
 
@@ -225,33 +229,7 @@ fn main() -> anyhow::Result<()> {
         });
 
         tauri::Builder::default()
-            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat, throttle_bandwidth, get_draw_data])
-            .setup(|app| {
-                let main_window = app.get_window("main").unwrap();
-                main_window.on_window_event(move |event| {
-                    if let WindowEvent::CloseRequested { api, .. } = event {
-                        api.prevent_close(); // Prevent the window from closing
-                        for iface in pnet::datalink::interfaces() {
-                            if !iface.is_up() || iface.ips.is_empty() {
-                                continue; // Skip interfaces that are down or have no IP
-                            }
-                    
-                            println!("Removing limits for interface: {}", iface.name);
-                            match reset_egress_bandwidth_limit(&iface.name) {
-                                Ok(_) => println!("Upload limit reset successfully for {}", iface.name),
-                                Err(e) => eprintln!("Failed to reset upload limit for {}: {}", iface.name, e),
-                            }
-                    
-                            match reset_ingress_bandwidth_limit(&iface.name) {
-                                Ok(_) => println!("Download limit reset successfully for {}", iface.name),
-                                Err(e) => eprintln!("Failed to reset download limit for {}: {}", iface.name, e),
-                            }
-                        }
-                        app.exit(0); // Then close the application
-                    }
-                });
-                Ok(())
-            })
+            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat, throttle_bandwidth_upload, get_draw_data])
             .run(tauri::generate_context!())
             .expect("error while running tauri application");
 
@@ -273,33 +251,7 @@ fn main() -> anyhow::Result<()> {
         });
 
         tauri::Builder::default()
-            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat, throttle_bandwidth, get_draw_data])
-            .setup(|app| {
-                let main_window = app.get_window("main").unwrap();
-                main_window.on_window_event(move |event| {
-                    if let WindowEvent::CloseRequested { api, .. } = event {
-                        api.prevent_close(); // Prevent the window from closing
-                        for iface in pnet::datalink::interfaces() {
-                            if !iface.is_up() || iface.ips.is_empty() {
-                                continue; // Skip interfaces that are down or have no IP
-                            }
-                    
-                            println!("Removing limits for interface: {}", iface.name);
-                            match reset_egress_bandwidth_limit(&iface.name) {
-                                Ok(_) => println!("Upload limit reset successfully for {}", iface.name),
-                                Err(e) => eprintln!("Failed to reset upload limit for {}: {}", iface.name, e),
-                            }
-                    
-                            match reset_ingress_bandwidth_limit(&iface.name) {
-                                Ok(_) => println!("Download limit reset successfully for {} with limit speed {}", iface.name, opts.download_limit_mbps),
-                                Err(e) => eprintln!("Failed to reset download limit for {}: {}", iface.name, e),
-                            }
-                        }
-                        app.exit(0); // Then close the application
-                    }
-                });
-                Ok(())
-            })
+            .invoke_handler(tauri::generate_handler![greet, gpl, gcl, gral, gpr, gcr, grar, gpt, gct, grat, throttle_bandwidth_upload, get_draw_data])
             .run(tauri::generate_context!())
             .expect("error while running tauri application");
 
